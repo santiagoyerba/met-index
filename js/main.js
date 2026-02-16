@@ -77,6 +77,10 @@ function renderRow(obj) {
     <span>${getLocation(obj)}</span>
     <span title="${esc(obj.dimensions)}">${parseCm(obj.dimensions)}</span>
   `;
+  if (obj.primaryImage || obj.primaryImageSmall) {
+    row.style.cursor = 'pointer';
+    row.addEventListener('click', () => openModal(obj));
+  }
   return row;
 }
 
@@ -181,6 +185,48 @@ function setupFilterToggle() {
   });
 }
 
+// ── Modal ─────────────────────────────────────────────────────────────────────
+
+function openModal(obj) {
+  const modal  = document.getElementById('modal');
+  const img    = document.getElementById('modal-img');
+  const title  = document.getElementById('modal-title');
+  const artist = document.getElementById('modal-artist');
+  const medium = document.getElementById('modal-medium');
+  const credit = document.getElementById('modal-credit');
+
+  img.src        = obj.primaryImage || obj.primaryImageSmall || '';
+  img.alt        = obj.title || '';
+  title.textContent  = val(obj.title);
+  artist.textContent = val(obj.artistDisplayName);
+  medium.textContent = val(obj.medium);
+  credit.textContent = val(obj.creditLine);
+
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function setupModal() {
+  const modal = document.getElementById('modal');
+
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+
+  // Close on click outside the inner panel
+  modal.addEventListener('click', e => {
+    if (e.target === modal) closeModal();
+  });
+
+  // Close on ESC
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+  });
+}
+
 // ── View toggle ───────────────────────────────────────────────────────────────
 
 function setupToggle() {
@@ -254,6 +300,7 @@ async function fetchAll(ids, concurrency, onProgress) {
 
 async function init() {
   setupToggle();
+  setupModal();
 
   const status = document.getElementById('status');
 

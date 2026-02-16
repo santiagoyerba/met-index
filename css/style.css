@@ -181,6 +181,92 @@ header {
   letter-spacing: 0.04em;
 }
 
+/* ── Modal ────────────────────────────────────── */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.modal-header {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: var(--pad);
+  z-index: 2;
+}
+
+#modal-close {
+  background: none;
+  border: none;
+  color: var(--fg);
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  cursor: pointer;
+  padding: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.modal-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  cursor: default;
+}
+
+#modal-img {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+  padding: var(--pad);
+}
+
+.modal-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  padding: calc(var(--pad) * 3) var(--pad);
+  text-align: center;
+}
+
+.modal-info p {
+  color: var(--fg-dim);
+}
+
+.modal-info p:first-child {
+  color: var(--fg);
+}
+
+@media (max-width: 700px) {
+  .modal-inner {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
+
+  #modal-img {
+    height: 100%;
+  }
+
+  .modal-info {
+    padding: var(--pad);
+  }
+}
+
 /* ── Utility ──────────────────────────────────── */
 
 .hidden {
