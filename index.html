@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Art Index</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header>
+    <span class="site-title">Art Index</span>
+    <div class="view-toggle">
+      <button id="btn-list" class="active">List</button>
+      <button id="btn-grid">Grid</button>
+    </div>
+  </header>
+
+  <nav id="filter-bar"></nav>
+  <button id="filter-toggle"></button>
+
+  <main>
+
+    <div id="view-list">
+      <div class="table-header">
+        <span>Type</span>
+        <span>Title</span>
+        <span>Artist</span>
+        <span>Date</span>
+        <span>Period</span>
+        <span>Location</span>
+        <span>Dimensions</span>
+      </div>
+      <div id="list-body"></div>
+    </div>
+
+    <div id="view-grid" class="hidden">
+      <div id="grid-body"></div>
+    </div>
+
+    <div id="status"></div>
+
+  </main>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
