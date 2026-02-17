@@ -18,13 +18,14 @@ Clicking a row in list view (or a node in expanded Timeline) opens a detail moda
 
 Filter chips (department, object type, country, artist) let you narrow down results. Each active filter is assigned a color from a palette; matching items are highlighted in that color across all views — text in List, bottom border in Grid, node fill in Timeline. Non-matching items are dimmed rather than hidden. Multiple active filters show a gradient where applicable.
 
-Objects load in batches of 50. Use **Load more** to fetch the next batch. Data is cached in `localStorage` for 24 hours.
+All objects load instantly from a pre-built `data.json` generated at deploy time. No API calls at runtime.
 
 ## Running locally
 
 ```bash
 cd met-index
 npm install
+npm run fetch-data   # generates public/data.json (~2 min)
 npm run dev
 ```
 
@@ -39,4 +40,4 @@ Then open `http://localhost:5173/met-index/`.
 
 ## Deploy
 
-Pushes to `main` automatically build and deploy to GitHub Pages via GitHub Actions.
+Pushes to `main` automatically run `fetch-data`, build, and deploy to GitHub Pages via GitHub Actions. `public/data.json` is generated in CI and not committed to the repo.
