@@ -280,17 +280,34 @@ header {
 }
 
 @media (max-width: 700px) {
+  .modal {
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
   .modal-inner {
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: auto;
+    padding: calc(var(--pad) * 3) var(--pad) calc(var(--pad) * 2);
+    gap: calc(var(--pad) * 1.5);
+    width: 100%;
   }
 
   #modal-img {
-    height: 100%;
+    width: 70%;
+    height: auto;
+    max-height: 55vh;
+    object-fit: contain;
+    padding: 0;
   }
 
   .modal-info {
-    padding: var(--pad);
+    padding: 0;
+    text-align: center;
+    width: 100%;
   }
 }
 
