@@ -1,5 +1,3 @@
-export const BASE = 'https://collectionapi.metmuseum.org/public/collection/v1';
-
 export const TAG_FIELDS = ['department', 'objectName'];
 
 export const PALETTE = [

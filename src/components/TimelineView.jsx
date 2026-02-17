@@ -7,7 +7,7 @@ const LABEL_X = 20; // left-margin for country labels
 const PAD_R = 40;
 const PAD_T = 160;
 const PAD_B = 48;
-const NODE_R = 5;
+const NODE_R = 3.5;
 const WHITE = '#ffffff';
 
 function getYear(obj) {
@@ -28,12 +28,56 @@ function hashJitter(id) {
   return ((h & 0xff) / 255) * 2 - 1;
 }
 
+function hashJitter2(id) {
+  let h = 0;
+  const s = 'x' + String(id);
+  for (let i = 0; i < s.length; i++) {
+    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  }
+  return ((h & 0xff) / 255) * 2 - 1;
+}
+
+const NATIONALITY_TO_COUNTRY = {
+  'italian': 'Italy',
+  'dutch': 'Netherlands',
+  'netherlandish': 'Netherlands',
+  'flemish': 'Belgium',
+  'french': 'France',
+  'german': 'Germany',
+  'spanish': 'Spain',
+  'british': 'United Kingdom',
+  'english': 'United Kingdom',
+  'american': 'United States',
+  'greek': 'Greece',
+  'byzantine': 'Byzantine',
+  'chinese': 'China',
+  'japanese': 'Japan',
+  'korean': 'Korea',
+  'indian': 'India',
+  'persian': 'Iran',
+  'turkish': 'Turkey',
+  'mexican': 'Mexico',
+  'austrian': 'Austria',
+  'portuguese': 'Portugal',
+  'swiss': 'Switzerland',
+  'czech': 'Czech Republic',
+  'hungarian': 'Hungary',
+  'polish': 'Poland',
+  'russian': 'Russia',
+  'swedish': 'Sweden',
+};
+
 function processData(objects) {
   const groups = {};
   objects.forEach(obj => {
     const year = getYear(obj);
     if (!year) return;
-    const country = obj.country || (obj.culture ? obj.culture.split(',')[0].trim() : null);
+    const nat = obj.artistNationality ? obj.artistNationality.split(',')[0].trim().toLowerCase() : null;
+    const nationalityCountry = nat ? NATIONALITY_TO_COUNTRY[nat] : null;
+    const countryRaw = obj.country
+      || (obj.culture ? obj.culture.split(',')[0].trim() : null)
+      || nationalityCountry;
+    const country = NATIONALITY_TO_COUNTRY[countryRaw?.toLowerCase()] || countryRaw;
     if (!country?.trim()) return;
 
     if (!groups[country]) groups[country] = [];
@@ -199,87 +243,48 @@ export default function TimelineView({ objects, activeTags, tagColors }) {
         const row = rows[expandedRow];
         const ep = expandProgress;
         const rowXOf = getExpandedXOf(row, W);
-        const currentXOf = year => {
+        const currentXOf = (year, id) => {
           const gx = xOf(year);
-          const rx = rowXOf(year);
+          const rx = rowXOf(year) + (id !== undefined ? hashJitter2(id) * 35 : 0);
           return gx + (rx - gx) * ep;
         };
         const centerY = H / 2;
         const normalRowBaseY = baseY(expandedRow);
         const currentY = (id) => {
           const ny = normalRowBaseY + hashJitter(id) * rowH * 0.28;
-          const ey = centerY + hashJitter(id) * H * 0.1;
+          const ey = centerY + hashJitter(id) * H * 0.22;
           return ny + (ey - ny) * ep;
         };
         const nodeR = NODE_R + NODE_R * ep;
 
-        // Lines (white, neutral)
-        ctx.lineWidth = 0.5 + 0.5 * ep;
-        ctx.strokeStyle = `rgba(255,255,255,${0.12 + 0.3 * ep})`;
+        // Lines (dim connectors)
+        ctx.lineWidth = 0.5;
+        ctx.strokeStyle = `rgba(255,255,255,${0.1 * ep})`;
         for (let j = 0; j < row.works.length - 1; j++) {
           ctx.beginPath();
-          ctx.moveTo(currentXOf(row.works[j].year), currentY(row.works[j].id));
-          ctx.lineTo(currentXOf(row.works[j + 1].year), currentY(row.works[j + 1].id));
+          ctx.moveTo(currentXOf(row.works[j].year, row.works[j].id), currentY(row.works[j].id));
+          ctx.lineTo(currentXOf(row.works[j + 1].year, row.works[j + 1].id), currentY(row.works[j + 1].id));
           ctx.stroke();
         }
 
-        // Pre-pass: collision detection for labels
-        ctx.font = '12px Helvetica, Arial, sans-serif';
-        const shownAbove = [];
-        const shownBelow = [];
+        // Nodes — dim by default, bright on hover
         row.works.forEach((w, j) => {
-          const x = currentXOf(w.year);
-          const above = j % 2 === 0;
-          const arr = above ? shownAbove : shownBelow;
-          let t = w.title || '';
-          if (t.length > 28) t = t.slice(0, 27) + '…';
-          const halfW = ctx.measureText(t).width / 2 + 8;
-          const overlaps = arr.some(prev => Math.abs(prev.x - x) < prev.halfW + halfW);
-          if (!overlaps) arr.push({ x, halfW, j });
-        });
-        const visibleLabels = new Set([
-          ...shownAbove.map(e => e.j),
-          ...shownBelow.map(e => e.j),
-        ]);
-
-        // Nodes
-        row.works.forEach((w, j) => {
-          const x = currentXOf(w.year);
+          const x = currentXOf(w.year, w.id);
           const y = currentY(w.id);
           const isHovered = hRow === expandedRow && hNode === j;
-          const nr = isHovered ? nodeR + 1.5 : nodeR;
+          const nr = isHovered ? nodeR + 2 : nodeR;
           const fill = getNodeFill(ctx, w, activeTags, tagColors, x, nr);
 
-          if (fill === 'dim') {
-            ctx.fillStyle = `rgba(255,255,255,${0.12 * ep})`;
-          } else if (fill) {
-            ctx.fillStyle = fill;
+          if (isHovered) {
+            ctx.fillStyle = (fill && fill !== 'dim' && typeof fill === 'string') ? fill : WHITE;
           } else {
-            ctx.fillStyle = isHovered ? WHITE : `rgba(255,255,255,${0.45 + 0.5 * ep})`;
+            ctx.fillStyle = `rgba(255,255,255,${0.22 * ep})`;
           }
           ctx.beginPath();
           ctx.arc(x, y, nr, 0, Math.PI * 2);
           ctx.fill();
 
-          const showLabel = visibleLabels.has(j) || isHovered;
-          if (ep > 0.6 && showLabel) {
-            const alpha = Math.min(1, (ep - 0.6) / 0.4);
-            ctx.save();
-            ctx.font = '12px Helvetica, Arial, sans-serif';
-            ctx.textAlign = 'center';
-            const labelColor = fill && fill !== 'dim' && typeof fill === 'string' ? fill : WHITE;
-            ctx.fillStyle = isHovered
-              ? hexToRgba(labelColor === WHITE ? WHITE : labelColor, alpha)
-              : `rgba(255,255,255,${alpha * 0.5})`;
-            let title = w.title || '';
-            if (title.length > 28) title = title.slice(0, 27) + '…';
-            const yearLabel = w.date || (w.year < 0 ? `${Math.abs(w.year)} BC` : String(w.year));
-            const above = j % 2 === 0;
-            ctx.fillText(title, x, above ? y - nr - 14 : y + nr + 10);
-            ctx.fillStyle = `rgba(255,255,255,${alpha * 0.3})`;
-            ctx.fillText(yearLabel, x, above ? y - nr - 3 : y + nr + 21);
-            ctx.restore();
-          }
+
         });
 
         // Row name
@@ -589,8 +594,8 @@ export default function TimelineView({ objects, activeTags, tagColors }) {
         const rowXOf = getExpandedXOf(row, W);
         const centerY = H / 2;
         row.works.forEach((w, j) => {
-          const x = rowXOf(w.year);
-          const y = centerY + hashJitter(w.id) * H * 0.1;
+          const x = rowXOf(w.year) + hashJitter2(w.id) * 35;
+          const y = centerY + hashJitter(w.id) * H * 0.22;
           if (Math.abs(mx - x) < 12 && Math.abs(my - y) < 12) {
             foundRow = expandedRow;
             foundNode = j;
