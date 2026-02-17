@@ -14,11 +14,18 @@
 }
 
 html, body {
+  height: 100%;
   background: var(--bg);
   color: var(--fg);
   font-family: Helvetica, Arial, sans-serif;
   font-size: var(--fs);
   line-height: var(--lh);
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
 }
 
 /* ── Header ───────────────────────────────────── */
@@ -27,8 +34,7 @@ header {
   display: flex;
   align-items: center;
   padding: var(--pad);
-  position: sticky;
-  top: 0;
+  flex-shrink: 0;
   background: var(--bg);
   z-index: 10;
 }
@@ -70,8 +76,7 @@ header {
   flex-wrap: wrap;
   gap: 8px 24px;
   padding: 0 var(--pad) var(--pad);
-  position: relative;
-  z-index: 6;
+  flex-shrink: 0;
 }
 
 .chip {
@@ -191,6 +196,14 @@ header {
 
 .search-input::placeholder {
   color: var(--fg-dim);
+}
+
+/* ── Main ─────────────────────────────────────── */
+
+main {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* ── Catalog view ─────────────────────────────── */
@@ -405,10 +418,8 @@ header {
 /* ── Timeline view ────────────────────────────── */
 
 #view-timeline {
-  position: fixed;
-  inset: 0;
-  background: var(--bg);
-  z-index: 5;
+  height: 100%;
+  position: relative;
 }
 
 #timeline-canvas {

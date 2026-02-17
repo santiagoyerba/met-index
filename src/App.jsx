@@ -58,7 +58,7 @@ export default function App() {
   }
 
   return (
-    <>
+    <div id="app">
       <Header
         activeView={activeView}
         onViewChange={setActiveView}
@@ -100,6 +100,6 @@ export default function App() {
         {activeView !== 'timeline' && <div id="status">{status}</div>}
       </main>
       {modalObj && <Modal obj={modalObj} onClose={() => setModalObj(null)} />}
-    </>
+    </div>
   );
 }

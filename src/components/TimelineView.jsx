@@ -5,7 +5,7 @@ const TOP_N = 18;
 const LABEL_W = 210;
 const LABEL_X = 20; // left-margin for country labels
 const PAD_R = 40;
-const PAD_T = 160;
+const PAD_T = 20;
 const PAD_B = 48;
 const NODE_R = 3.5;
 const WHITE = '#ffffff';
@@ -267,7 +267,7 @@ export default function TimelineView({ objects, activeTags, tagColors }) {
           ctx.stroke();
         }
 
-        // Nodes — dim by default, bright on hover
+        // Nodes — colored by filter, dim on no-match, bright on hover
         row.works.forEach((w, j) => {
           const x = currentXOf(w.year, w.id);
           const y = currentY(w.id);
@@ -276,15 +276,19 @@ export default function TimelineView({ objects, activeTags, tagColors }) {
           const fill = getNodeFill(ctx, w, activeTags, tagColors, x, nr);
 
           if (isHovered) {
-            ctx.fillStyle = (fill && fill !== 'dim' && typeof fill === 'string') ? fill : WHITE;
+            ctx.fillStyle = (fill && fill !== 'dim') ? fill : WHITE;
+          } else if (fill === 'dim') {
+            ctx.fillStyle = `rgba(255,255,255,${0.12 * ep})`;
+          } else if (fill) {
+            ctx.fillStyle = fill;
+            ctx.globalAlpha = ep * 0.45;
           } else {
             ctx.fillStyle = `rgba(255,255,255,${0.22 * ep})`;
           }
           ctx.beginPath();
           ctx.arc(x, y, nr, 0, Math.PI * 2);
           ctx.fill();
-
-
+          ctx.globalAlpha = 1;
         });
 
         // Row name
