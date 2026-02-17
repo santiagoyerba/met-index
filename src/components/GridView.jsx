@@ -1,6 +1,6 @@
 import { objMatchesActiveTags, getMatchingColors } from '../utils/met';
 
-export default function GridView({ objects, activeTags, tagColors, onLoadMore, hasMore, loading }) {
+export default function GridView({ objects, activeTags, tagColors }) {
   const anyActive = activeTags.size > 0;
 
   return (
@@ -28,13 +28,6 @@ export default function GridView({ objects, activeTags, tagColors, onLoadMore, h
           );
         })}
       </div>
-      {hasMore && (
-        <div id="load-more">
-          <button onClick={onLoadMore} disabled={loading}>
-            {loading ? 'Loading…' : 'Load more'}
-          </button>
-        </div>
-      )}
     </div>
   );
 }

@@ -27,7 +27,7 @@ function Row({ obj, activeTags, tagColors, anyActive, onClick }) {
   );
 }
 
-export default function ListView({ objects, activeTags, tagColors, onRowClick, onLoadMore, hasMore, loading }) {
+export default function ListView({ objects, activeTags, tagColors, onRowClick }) {
   const anyActive = activeTags.size > 0;
 
   return (
@@ -53,13 +53,6 @@ export default function ListView({ objects, activeTags, tagColors, onRowClick, o
           />
         ))}
       </div>
-      {hasMore && (
-        <div id="load-more">
-          <button onClick={onLoadMore} disabled={loading}>
-            {loading ? 'Loading…' : 'Load more'}
-          </button>
-        </div>
-      )}
     </div>
   );
 }

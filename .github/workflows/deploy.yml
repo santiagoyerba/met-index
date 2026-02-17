@@ -15,6 +15,7 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
+      - run: node scripts/fetch-data.js
       - run: npm run build
       - uses: peaceiris/actions-gh-pages@v4
         with:

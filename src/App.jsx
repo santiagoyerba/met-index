@@ -12,7 +12,7 @@ export default function App() {
   const [activeView, setActiveView] = useState('list');
   const [activeTags, setActiveTags] = useState(new Set());
   const [modalObj, setModalObj] = useState(null);
-  const { objects, status, hasMore, loading, loadMore, init } = useMETObjects();
+  const { objects, status, init } = useMETObjects();
 
   useEffect(() => { init(); }, [init]);
 
@@ -48,9 +48,6 @@ export default function App() {
             activeTags={activeTags}
             tagColors={tagColors}
             onRowClick={setModalObj}
-            onLoadMore={loadMore}
-            hasMore={hasMore}
-            loading={loading}
           />
         )}
         {activeView === 'grid' && (
@@ -58,9 +55,6 @@ export default function App() {
             objects={objects}
             activeTags={activeTags}
             tagColors={tagColors}
-            onLoadMore={loadMore}
-            hasMore={hasMore}
-            loading={loading}
           />
         )}
         {activeView === 'timeline' && (
