@@ -2,9 +2,10 @@ import { useEffect, useRef } from 'react';
 import { TAG_FIELDS, normalizeTag, getMatchingColors, hexToRgba } from '../utils/met';
 
 const TOP_N = 18;
-const LABEL_W = 148;
+const LABEL_W = 210;
+const LABEL_X = 20; // left-margin for country labels
 const PAD_R = 40;
-const PAD_T = 140;
+const PAD_T = 160;
 const PAD_B = 48;
 const NODE_R = 5;
 const WHITE = '#ffffff';
@@ -152,8 +153,8 @@ export default function TimelineView({ objects, activeTags, tagColors }) {
     stateRef.current = { rows, minYear, maxYear, yearToFrac, sortedYears, hRow: -1, hNode: -1, progress: 0, expandedRow: -1, expandProgress: 0, particles: [] };
 
     function getLayout() {
-      const W = canvas.width;
-      const H = canvas.height;
+      const W = canvas.offsetWidth;
+      const H = canvas.offsetHeight;
       const chartW = W - LABEL_W - PAD_R;
       const chartH = H - PAD_T - PAD_B;
       const { rows, yearToFrac, minYear, maxYear } = stateRef.current;
@@ -285,11 +286,11 @@ export default function TimelineView({ objects, activeTags, tagColors }) {
         if (ep > 0.3) {
           const alpha = Math.min(1, (ep - 0.3) / 0.4);
           ctx.font = '12px Helvetica, Arial, sans-serif';
-          ctx.textAlign = 'right';
+          ctx.textAlign = 'left';
           ctx.fillStyle = `rgba(255,255,255,${alpha * 0.45})`;
           let name = row.name.toUpperCase();
           if (name.length > 17) name = name.slice(0, 16) + '…';
-          ctx.fillText(name, LABEL_W - 14, centerY + 4);
+          ctx.fillText(name, LABEL_X, centerY + 4);
         }
 
         // Year axis (row-specific)
@@ -318,10 +319,13 @@ export default function TimelineView({ objects, activeTags, tagColors }) {
 
       // ── Normal view ───────────────────────────────
 
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(LABEL_W, 0, clipW, H);
-      ctx.clip();
+      const needsClip = progress < 1;
+      if (needsClip) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(LABEL_W, 0, clipW, H);
+        ctx.clip();
+      }
 
       // Lines (white always — neutral connectors)
       rows.forEach((row, i) => {
@@ -371,11 +375,11 @@ export default function TimelineView({ objects, activeTags, tagColors }) {
         });
       });
 
-      ctx.restore();
+      if (needsClip) ctx.restore();
 
       // Labels
       ctx.font = '12px Helvetica, Arial, sans-serif';
-      ctx.textAlign = 'right';
+      ctx.textAlign = 'left';
       rows.forEach((row, i) => {
         const isHovered = hRow === i;
         ctx.fillStyle = anyHovered
@@ -383,7 +387,7 @@ export default function TimelineView({ objects, activeTags, tagColors }) {
           : 'rgba(255,255,255,0.5)';
         let name = row.name.toUpperCase();
         if (name.length > 17) name = name.slice(0, 16) + '…';
-        ctx.fillText(name, LABEL_W - 14, baseY(i) + 3.5);
+        ctx.fillText(name, LABEL_X, baseY(i) + 3.5);
       });
 
       // Year ticks — quantile-based (evenly spaced by data density)
@@ -445,7 +449,7 @@ export default function TimelineView({ objects, activeTags, tagColors }) {
     }
 
     function initParticles() {
-      const W = canvas.width, H = canvas.height;
+      const W = canvas.offsetWidth, H = canvas.offsetHeight;
       stateRef.current.particles = Array.from({ length: AMBIENT_COUNT }, () => makeParticle(W, H));
     }
 
@@ -462,7 +466,7 @@ export default function TimelineView({ objects, activeTags, tagColors }) {
     }
 
     function tickParticles() {
-      const W = canvas.width, H = canvas.height;
+      const W = canvas.offsetWidth, H = canvas.offsetHeight;
       stateRef.current.particles.forEach(p => {
         if (p.kickFade > 0) {
           p.x += p.kickVx;
@@ -495,8 +499,10 @@ export default function TimelineView({ objects, activeTags, tagColors }) {
     }
 
     function resize() {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = canvas.offsetWidth * dpr;
+      canvas.height = canvas.offsetHeight * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       initParticles();
       redraw();
     }
