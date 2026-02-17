@@ -6,7 +6,7 @@ const LABEL_W = 148;
 const PAD_R = 40;
 const PAD_T = 140;
 const PAD_B = 48;
-const NODE_R = 3.5;
+const NODE_R = 5;
 const WHITE = '#ffffff';
 
 function getYear(obj) {
@@ -128,6 +128,7 @@ export default function TimelineView({ objects, activeTags, tagColors }) {
     expandProgress: 0,
   });
   const rafRef = useRef(null);
+  const particleRafRef = useRef(null);
   const redrawRef = useRef(null);
 
   // Re-draw when filters change (without re-running the full effect)
@@ -148,7 +149,7 @@ export default function TimelineView({ objects, activeTags, tagColors }) {
     const maxYear = rows.length ? Math.max(...allYears) : 1;
 
     const { yearToFrac, sortedYears } = buildXScale(rows);
-    stateRef.current = { rows, minYear, maxYear, yearToFrac, sortedYears, hRow: -1, hNode: -1, progress: 0, expandedRow: -1, expandProgress: 0 };
+    stateRef.current = { rows, minYear, maxYear, yearToFrac, sortedYears, hRow: -1, hNode: -1, progress: 0, expandedRow: -1, expandProgress: 0, particles: [] };
 
     function getLayout() {
       const W = canvas.width;
@@ -311,6 +312,7 @@ export default function TimelineView({ objects, activeTags, tagColors }) {
           }
         }
 
+        drawParticles();
         return;
       }
 
@@ -400,13 +402,102 @@ export default function TimelineView({ objects, activeTags, tagColors }) {
         const x = xOf(year);
         ctx.fillText(year < 0 ? `${Math.abs(year)} BC` : String(year), x, H - PAD_B + 20);
       });
+
+      drawParticles();
+    }
+
+    function drawParticles() {
+      const { particles } = stateRef.current;
+      if (!particles.length) return;
+      const { activeTags, tagColors } = filterRef.current;
+      const filterColors = activeTags.size > 0
+        ? [...activeTags].map(tag => tagColors.get(tag)).filter(Boolean)
+        : null;
+      particles.forEach((p, i) => {
+        const alpha = p.baseAlpha + p.kickFade * 0.7;
+        let fillStyle;
+        if (filterColors?.length) {
+          fillStyle = hexToRgba(filterColors[i % filterColors.length], alpha);
+        } else {
+          fillStyle = `rgba(255,255,255,${alpha.toFixed(2)})`;
+        }
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r + p.kickFade * 0.8, 0, Math.PI * 2);
+        ctx.fillStyle = fillStyle;
+        ctx.fill();
+      });
     }
 
     redrawRef.current = redraw;
 
+    const AMBIENT_COUNT = 80;
+
+    function makeParticle(W, H) {
+      return {
+        x: Math.random() * W,
+        y: PAD_T + Math.random() * Math.max(1, H - PAD_T - PAD_B),
+        vx: (Math.random() * 0.28 + 0.04) * (Math.random() < 0.5 ? 1 : -1),
+        vy: (Math.random() - 0.5) * 0.12,
+        r: 0.8 + Math.random() * 1.4,
+        baseAlpha: 0.2 + Math.random() * 0.35,
+        kickVx: 0, kickVy: 0, kickFade: 0,
+      };
+    }
+
+    function initParticles() {
+      const W = canvas.width, H = canvas.height;
+      stateRef.current.particles = Array.from({ length: AMBIENT_COUNT }, () => makeParticle(W, H));
+    }
+
+    function kickParticles(clickY) {
+      stateRef.current.particles.forEach(p => {
+        const dist = Math.abs(p.y - clickY);
+        if (dist < 80) {
+          const str = (1 - dist / 80) * 5;
+          p.kickVx = (Math.random() - 0.5) * str * 3.5;
+          p.kickVy = (Math.random() - 0.5) * str * 2;
+          p.kickFade = 0.8 + Math.random() * 0.2;
+        }
+      });
+    }
+
+    function tickParticles() {
+      const W = canvas.width, H = canvas.height;
+      stateRef.current.particles.forEach(p => {
+        if (p.kickFade > 0) {
+          p.x += p.kickVx;
+          p.y += p.kickVy;
+          p.kickVx *= 0.87;
+          p.kickVy *= 0.87;
+          p.kickFade -= 0.035;
+          if (p.kickFade < 0) p.kickFade = 0;
+        }
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0) p.x = W;
+        if (p.x > W) p.x = 0;
+        if (p.y < PAD_T) p.y = H - PAD_B;
+        if (p.y > H - PAD_B) p.y = PAD_T;
+      });
+    }
+
+    function startAmbientLoop() {
+      let lastTs = 0;
+      function loop(ts) {
+        if (ts - lastTs > 42) { // ~24fps
+          lastTs = ts;
+          tickParticles();
+          redraw();
+        }
+        particleRafRef.current = requestAnimationFrame(loop);
+      }
+      particleRafRef.current = requestAnimationFrame(loop);
+    }
+
     function resize() {
       canvas.width = canvas.offsetWidth;
       canvas.height = canvas.offsetHeight;
+      initParticles();
       redraw();
     }
 
@@ -429,6 +520,7 @@ export default function TimelineView({ objects, activeTags, tagColors }) {
       } else {
         stateRef.current.progress = 1;
         redraw();
+        startAmbientLoop();
       }
     }
     rafRef.current = requestAnimationFrame(animate);
@@ -538,7 +630,11 @@ export default function TimelineView({ objects, activeTags, tagColors }) {
       if (expandedRow !== -1) {
         if (hNode === -1) closeExpanded();
       } else {
-        if (stateRef.current.hRow !== -1) openExpanded(stateRef.current.hRow);
+        if (stateRef.current.hRow !== -1) {
+          const rect = canvas.getBoundingClientRect();
+          kickParticles(e.clientY - rect.top);
+          openExpanded(stateRef.current.hRow);
+        }
       }
     }
 
@@ -558,6 +654,7 @@ export default function TimelineView({ objects, activeTags, tagColors }) {
 
     return () => {
       cancelAnimationFrame(rafRef.current);
+      cancelAnimationFrame(particleRafRef.current);
       ro.disconnect();
       canvas.removeEventListener('mousemove', onMouseMove);
       canvas.removeEventListener('mouseleave', onMouseLeave);
