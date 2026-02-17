@@ -15,6 +15,12 @@ export default function Header({ activeView, onViewChange }) {
         >
           Grid
         </button>
+        <button
+          className={activeView === 'timeline' ? 'active' : ''}
+          onClick={() => onViewChange('timeline')}
+        >
+          Timeline
+        </button>
       </div>
     </header>
   );

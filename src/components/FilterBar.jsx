@@ -1,36 +1,28 @@
-import { useState, useMemo } from 'react';
-import { TAG_FIELDS, normalizeTag } from '../utils/met';
-
-function buildCounts(objects) {
-  const counts = new Map();
-  objects.forEach(obj => {
-    TAG_FIELDS.forEach(field => {
-      const raw = obj[field];
-      if (!raw || !raw.trim()) return;
-      const v = normalizeTag(raw, field);
-      counts.set(v, (counts.get(v) || 0) + 1);
-    });
-  });
-  return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-}
+import { useState } from 'react';
+import { buildTagCounts, hexToRgba } from '../utils/met';
 
 const COLLAPSE_LIMIT = 10;
 
-export default function FilterBar({ objects, activeTags, onToggleTag }) {
+export default function FilterBar({ objects, activeTags, tagColors, onToggleTag }) {
   const [expanded, setExpanded] = useState(false);
-  const sorted = useMemo(() => buildCounts(objects), [objects]);
+  const sorted = buildTagCounts(objects);
   const overflow = sorted.length - COLLAPSE_LIMIT;
 
   return (
     <>
       <nav id="filter-bar">
         {sorted.map(([tag, count], i) => {
-          const isOverflow = i >= COLLAPSE_LIMIT;
-          if (isOverflow && !expanded) return null;
+          if (i >= COLLAPSE_LIMIT && !expanded) return null;
+          const color = tagColors.get(tag);
+          const isActive = activeTags.has(tag);
+          const chipColor = color
+            ? (isActive ? color : hexToRgba(color, 0.38))
+            : undefined;
           return (
             <button
               key={tag}
-              className={`chip${activeTags.has(tag) ? ' active' : ''}`}
+              className={`chip${isActive ? ' active' : ''}`}
+              style={chipColor ? { color: chipColor } : undefined}
               onClick={() => onToggleTag(tag)}
             >
               <span className="chip-label">{tag}</span>

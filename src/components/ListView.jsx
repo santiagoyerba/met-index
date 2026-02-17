@@ -1,12 +1,19 @@
-import { val, getLocation, parseCm, objMatchesActiveTags } from '../utils/met';
+import { val, getLocation, parseCm, objMatchesActiveTags, getMatchingColors } from '../utils/met';
 
-function Row({ obj, activeTags, anyActive, onClick }) {
+function Row({ obj, activeTags, tagColors, anyActive, onClick }) {
   const hit = objMatchesActiveTags(obj, activeTags);
   const hasImage = obj.primaryImage || obj.primaryImageSmall;
+
+  let rowStyle = hasImage ? { cursor: 'pointer' } : {};
+  if (anyActive && hit) {
+    const colors = getMatchingColors(obj, activeTags, tagColors);
+    if (colors.length > 0) rowStyle.color = colors[0];
+  }
+
   return (
     <div
       className={`table-row${anyActive && !hit ? ' dimmed' : ''}`}
-      style={hasImage ? { cursor: 'pointer' } : undefined}
+      style={rowStyle}
       onClick={hasImage ? () => onClick(obj) : undefined}
     >
       <span title={obj.objectName}>{val(obj.objectName)}</span>
@@ -20,7 +27,7 @@ function Row({ obj, activeTags, anyActive, onClick }) {
   );
 }
 
-export default function ListView({ objects, activeTags, onRowClick, onLoadMore, hasMore, loading }) {
+export default function ListView({ objects, activeTags, tagColors, onRowClick, onLoadMore, hasMore, loading }) {
   const anyActive = activeTags.size > 0;
 
   return (
@@ -40,6 +47,7 @@ export default function ListView({ objects, activeTags, onRowClick, onLoadMore, 
             key={obj.objectID}
             obj={obj}
             activeTags={activeTags}
+            tagColors={tagColors}
             anyActive={anyActive}
             onClick={onRowClick}
           />
