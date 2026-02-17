@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react';
 import { val, getLocation, parseCm, objMatchesActiveTags } from '../utils/met';
 
 function Row({ obj, activeTags, anyActive, onClick }) {
@@ -21,18 +20,8 @@ function Row({ obj, activeTags, anyActive, onClick }) {
   );
 }
 
-export default function ListView({ objects, activeTags, onRowClick, onLoadMore, hasMore }) {
-  const sentinelRef = useRef(null);
+export default function ListView({ objects, activeTags, onRowClick, onLoadMore, hasMore, loading }) {
   const anyActive = activeTags.size > 0;
-
-  useEffect(() => {
-    if (!hasMore || !sentinelRef.current) return;
-    const observer = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting) onLoadMore();
-    }, { rootMargin: '200px' });
-    observer.observe(sentinelRef.current);
-    return () => observer.disconnect();
-  }, [hasMore, onLoadMore]);
 
   return (
     <div id="view-list">
@@ -56,7 +45,13 @@ export default function ListView({ objects, activeTags, onRowClick, onLoadMore, 
           />
         ))}
       </div>
-      {hasMore && <div ref={sentinelRef} style={{ height: 1 }} />}
+      {hasMore && (
+        <div id="load-more">
+          <button onClick={onLoadMore} disabled={loading}>
+            {loading ? 'Loading…' : 'Load more'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -181,6 +181,33 @@ header {
   letter-spacing: 0.04em;
 }
 
+/* ── Load more ────────────────────────────────── */
+
+#load-more {
+  padding: var(--pad);
+}
+
+#load-more button {
+  background: none;
+  border: none;
+  color: var(--fg-dim);
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  cursor: pointer;
+  padding: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+#load-more button:hover:not(:disabled) {
+  color: var(--fg);
+}
+
+#load-more button:disabled {
+  cursor: default;
+}
+
 /* ── Modal ────────────────────────────────────── */
 
 .modal {

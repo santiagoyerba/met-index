@@ -8,30 +8,33 @@ A web index of religious artworks from the [Metropolitan Museum of Art](https://
 
 ## What it does
 
-Fetches 100 objects from the MET API and displays them in two views:
+Fetches objects from the MET public API and displays them in two views:
 
 - **List** — table with columns: Type, Title, Artist, Date, Period, Location, Dimensions
 - **Grid** — image thumbnails
 
-Filter chips (department, object type, country) let you narrow down the results. Non-matching items are dimmed rather than hidden.
+Clicking a row in list view opens a detail modal with the full image, medium, and credit line.
 
-Data is cached in `localStorage` for 24 hours to avoid repeated API calls.
+Filter chips (department, object type, country) let you narrow down results using OR logic. Non-matching items are dimmed rather than hidden.
+
+Objects load in batches of 50. Use **Load more** to fetch the next batch. Data is cached in `localStorage` for 24 hours.
 
 ## Running locally
 
-Requires a local HTTP server (the MET API blocks `file://` requests):
-
 ```bash
 cd met-index
-python3 -m http.server 3000
+npm install
+npm run dev
 ```
 
-Then open `http://localhost:3000`.
+Then open `http://localhost:5173/met-index/`.
 
 ## Stack
 
-Plain HTML, CSS, and JavaScript — no build step, no dependencies.
+- [Vite](https://vite.dev/) + [React](https://react.dev/)
+- Plain CSS (no framework)
+- [MET Museum Collection API](https://metmuseum.github.io/) (public, no auth required)
 
-## API
+## Deploy
 
-Uses the [MET Museum Collection API](https://metmuseum.github.io/) (public, no auth required).
+Pushes to `main` automatically build and deploy to GitHub Pages via GitHub Actions.

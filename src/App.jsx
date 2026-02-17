@@ -10,7 +10,7 @@ export default function App() {
   const [activeView, setActiveView] = useState('list');
   const [activeTags, setActiveTags] = useState(new Set());
   const [modalObj, setModalObj] = useState(null);
-  const { objects, status, hasMore, loadMore, init } = useMETObjects();
+  const { objects, status, hasMore, loading, loadMore, init } = useMETObjects();
 
   useEffect(() => { init(); }, [init]);
 
@@ -34,6 +34,7 @@ export default function App() {
             onRowClick={setModalObj}
             onLoadMore={loadMore}
             hasMore={hasMore}
+            loading={loading}
           />
         ) : (
           <GridView
@@ -41,6 +42,7 @@ export default function App() {
             activeTags={activeTags}
             onLoadMore={loadMore}
             hasMore={hasMore}
+            loading={loading}
           />
         )}
         <div id="status">{status}</div>
