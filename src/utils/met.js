@@ -1,6 +1,6 @@
 export const BASE = 'https://collectionapi.metmuseum.org/public/collection/v1';
 
-export const TAG_FIELDS = ['department', 'objectName', 'country', 'artistDisplayName'];
+export const TAG_FIELDS = ['department', 'objectName'];
 
 export const PALETTE = [
   '#e8b86d', // amber
@@ -35,16 +35,21 @@ export function normalizeTag(value, field) {
 }
 
 export function buildTagCounts(objects) {
-  const counts = new Map();
+  const deptCounts = new Map();
+  const typeCounts = new Map();
+
   objects.forEach(obj => {
-    TAG_FIELDS.forEach(field => {
-      const raw = obj[field];
-      if (!raw || !raw.trim()) return;
-      const v = normalizeTag(raw, field);
-      counts.set(v, (counts.get(v) || 0) + 1);
-    });
+    const dept = normalizeTag(obj.department || '', 'department');
+    if (dept?.trim()) deptCounts.set(dept, (deptCounts.get(dept) || 0) + 1);
+
+    const type = normalizeTag(obj.objectName || '', 'objectName');
+    if (type?.trim()) typeCounts.set(type, (typeCounts.get(type) || 0) + 1);
   });
-  return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+  const deptTags = [...deptCounts.entries()].sort((a, b) => b[1] - a[1]);
+  const typeTags = [...typeCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
+
+  return [...deptTags, ...typeTags];
 }
 
 export function val(v) {
