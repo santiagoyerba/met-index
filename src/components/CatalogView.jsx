@@ -52,6 +52,7 @@ export default function CatalogView({ objects, activeTags, tagColors, onRowClick
           objects={objects}
           activeTags={activeTags}
           tagColors={tagColors}
+          onCardClick={onRowClick}
         />
       )}
     </div>

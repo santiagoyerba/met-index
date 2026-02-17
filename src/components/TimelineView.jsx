@@ -159,7 +159,7 @@ function getExpandedXOf(row, W) {
   return year => LABEL_W + ((year - eMin) / (eMax - eMin)) * (W - LABEL_W - PAD_R);
 }
 
-export default function TimelineView({ objects, activeTags, tagColors }) {
+export default function TimelineView({ objects, activeTags, tagColors, onNodeClick }) {
   const canvasRef = useRef(null);
   const tooltipRef = useRef(null);
   const closeRef = useRef(null);
@@ -643,7 +643,13 @@ export default function TimelineView({ objects, activeTags, tagColors }) {
       if (expandProgress > 0 && expandProgress < 1) return;
 
       if (expandedRow !== -1) {
-        if (hNode === -1) closeExpanded();
+        if (hNode !== -1) {
+          const work = stateRef.current.rows[expandedRow].works[hNode];
+          const obj = objects.find(o => o.objectID === work.id);
+          if (obj && onNodeClick) onNodeClick(obj);
+        } else {
+          closeExpanded();
+        }
       } else {
         if (stateRef.current.hRow !== -1) {
           const rect = canvas.getBoundingClientRect();

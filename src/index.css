@@ -324,23 +324,18 @@ main {
 .modal {
   position: fixed;
   inset: 0;
-  background: var(--bg);
+  background: rgba(0, 0, 0, 0.85);
   z-index: 100;
   display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
 }
 
-.modal-header {
+.modal-close-btn {
   position: absolute;
-  top: 0;
-  right: 0;
-  padding: var(--pad);
-  z-index: 2;
-}
-
-#modal-close {
+  top: var(--pad);
+  right: var(--pad);
   background: none;
   border: none;
   color: var(--fg);
@@ -351,75 +346,46 @@ main {
   padding: 0;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  z-index: 1;
 }
 
-.modal-inner {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
+.modal-frame {
+  position: relative;
+  max-width: min(90vw, 960px);
+  max-height: 90vh;
   cursor: default;
+  display: flex;
 }
 
-#modal-img {
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  object-fit: contain;
-  object-position: center;
+.modal-img {
   display: block;
-  padding: var(--pad);
+  max-width: min(90vw, 960px);
+  max-height: 90vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
 }
 
-.modal-info {
+.modal-caption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 80px var(--pad) var(--pad);
+  background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.82));
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 12px;
-  padding: calc(var(--pad) * 3) var(--pad);
-  text-align: center;
+  gap: 5px;
 }
 
-.modal-info p {
-  color: var(--fg-dim);
-}
-
-.modal-info p:first-child {
+.modal-caption-title {
   color: var(--fg);
+  letter-spacing: 0.02em;
 }
 
-@media (max-width: 700px) {
-  .modal {
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .modal-inner {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin: auto;
-    padding: calc(var(--pad) * 3) var(--pad) calc(var(--pad) * 2);
-    gap: calc(var(--pad) * 1.5);
-    width: 100%;
-  }
-
-  #modal-img {
-    width: 70%;
-    height: auto;
-    max-height: 55vh;
-    object-fit: contain;
-    padding: 0;
-  }
-
-  .modal-info {
-    padding: 0;
-    text-align: center;
-    width: 100%;
-  }
+.modal-caption-sub {
+  color: var(--fg-dim);
+  font-size: 0.88em;
 }
 
 /* ── Stats view ───────────────────────────────── */

@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { objMatchesActiveTags, getMatchingColors } from '../utils/met';
 
-function GridCard({ obj, dimmed, borderStyle }) {
+function GridCard({ obj, dimmed, borderStyle, onCardClick }) {
   const [imgFailed, setImgFailed] = useState(false);
   const showPlaceholder = !obj.primaryImageSmall || imgFailed;
 
   return (
-    <div className={`grid-card${dimmed ? ' dimmed' : ''}`} style={borderStyle}>
+    <div
+      className={`grid-card${dimmed ? ' dimmed' : ''}`}
+      style={{ ...borderStyle, cursor: showPlaceholder ? 'default' : 'pointer' }}
+      onClick={() => { if (!showPlaceholder) onCardClick(obj); }}
+    >
       {showPlaceholder
         ? <div className="grid-placeholder">
             <span className="grid-placeholder-title">{obj.title}</span>
@@ -28,7 +32,7 @@ function GridCard({ obj, dimmed, borderStyle }) {
   );
 }
 
-export default function GridView({ objects, activeTags, tagColors }) {
+export default function GridView({ objects, activeTags, tagColors, onCardClick }) {
   const anyActive = activeTags.size > 0;
 
   return (
@@ -51,6 +55,7 @@ export default function GridView({ objects, activeTags, tagColors }) {
               obj={obj}
               dimmed={anyActive && !hit}
               borderStyle={borderStyle}
+              onCardClick={onCardClick}
             />
           );
         })}

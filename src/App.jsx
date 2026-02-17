@@ -95,6 +95,7 @@ export default function App() {
             objects={filteredObjects}
             activeTags={activeTags}
             tagColors={tagColors}
+            onNodeClick={setModalObj}
           />
         )}
         {activeView !== 'timeline' && <div id="status">{status}</div>}
