@@ -14,7 +14,7 @@ Fetches objects from the MET public API and displays them in three views:
 - **Grid** — image thumbnails in a responsive grid
 - **Timeline** — canvas-based node graph. Rows by country (derived from country, culture, or artist nationality), nodes are individual artworks, left-to-right chronological axis with density-based spacing. Click a row to expand it full-width; nodes are dimmed by default and reveal title and date on hover.
 
-The header provides **Search** (expands inline, filters by title, artist, or type across all views), a **List/Grid** toggle, and a **Filters** toggle.
+The header provides **Search** (expands inline, filters by title, artist, or type across all views), a **List/Grid** toggle, a **Filters** toggle, and a **Timeline** view button.
 
 Clicking a row in list view (or a node in expanded Timeline) opens a detail modal with the full image, medium, and credit line.
 

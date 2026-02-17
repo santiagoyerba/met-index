@@ -1,4 +1,32 @@
+import { useState } from 'react';
 import { objMatchesActiveTags, getMatchingColors } from '../utils/met';
+
+function GridCard({ obj, dimmed, borderStyle }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const showPlaceholder = !obj.primaryImageSmall || imgFailed;
+
+  return (
+    <div className={`grid-card${dimmed ? ' dimmed' : ''}`} style={borderStyle}>
+      {showPlaceholder
+        ? <div className="grid-placeholder">
+            <span className="grid-placeholder-title">{obj.title}</span>
+            {obj.artistDisplayName && (
+              <span className="grid-placeholder-artist">{obj.artistDisplayName}</span>
+            )}
+            {obj.objectDate && (
+              <span className="grid-placeholder-date">{obj.objectDate}</span>
+            )}
+          </div>
+        : <img
+            src={obj.primaryImageSmall}
+            alt={obj.title}
+            loading="lazy"
+            onError={() => setImgFailed(true)}
+          />
+      }
+    </div>
+  );
+}
 
 export default function GridView({ objects, activeTags, tagColors }) {
   const anyActive = activeTags.size > 0;
@@ -18,13 +46,12 @@ export default function GridView({ objects, activeTags, tagColors }) {
             }
           }
           return (
-            <div
+            <GridCard
               key={obj.objectID}
-              className={`grid-card${anyActive && !hit ? ' dimmed' : ''}`}
-              style={borderStyle}
-            >
-              <img src={obj.primaryImageSmall} alt={obj.title} loading="lazy" />
-            </div>
+              obj={obj}
+              dimmed={anyActive && !hit}
+              borderStyle={borderStyle}
+            />
           );
         })}
       </div>
