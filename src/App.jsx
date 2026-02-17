@@ -1,16 +1,19 @@
 import { useState, useEffect, useMemo } from 'react';
 import Header from './components/Header';
 import FilterBar from './components/FilterBar';
-import ListView from './components/ListView';
-import GridView from './components/GridView';
+import CatalogView from './components/CatalogView';
 import TimelineView from './components/TimelineView';
 import Modal from './components/Modal';
 import { useMETObjects } from './hooks/useMETObjects';
 import { buildTagCounts, PALETTE } from './utils/met';
 
 export default function App() {
-  const [activeView, setActiveView] = useState('list');
+  const [activeView, setActiveView] = useState('catalog');
+  const [displayMode, setDisplayMode] = useState('list');
   const [activeTags, setActiveTags] = useState(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const [modalObj, setModalObj] = useState(null);
   const { objects, status, init } = useMETObjects();
 
@@ -24,6 +27,16 @@ export default function App() {
     return map;
   }, [objects]);
 
+  const filteredObjects = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return objects;
+    return objects.filter(obj =>
+      (obj.title || '').toLowerCase().includes(q) ||
+      (obj.artistDisplayName || '').toLowerCase().includes(q) ||
+      (obj.objectName || '').toLowerCase().includes(q)
+    );
+  }, [objects, searchQuery]);
+
   function toggleTag(tag) {
     setActiveTags(prev => {
       const next = new Set(prev);
@@ -32,34 +45,54 @@ export default function App() {
     });
   }
 
+  function handleDisplayMode(mode) {
+    setDisplayMode(mode);
+    setActiveView('catalog');
+  }
+
+  function toggleSearch() {
+    setShowSearch(prev => {
+      if (prev) setSearchQuery('');
+      return !prev;
+    });
+  }
+
   return (
     <>
-      <Header activeView={activeView} onViewChange={setActiveView} />
-      <FilterBar
-        objects={objects}
-        activeTags={activeTags}
-        tagColors={tagColors}
-        onToggleTag={toggleTag}
+      <Header
+        activeView={activeView}
+        onViewChange={setActiveView}
+        displayMode={displayMode}
+        onDisplayModeChange={handleDisplayMode}
+        showSearch={showSearch}
+        onSearchToggle={toggleSearch}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        showFilters={showFilters}
+        onFiltersToggle={() => setShowFilters(p => !p)}
+        activeTagCount={activeTags.size}
       />
+      {showFilters && (
+        <FilterBar
+          objects={objects}
+          activeTags={activeTags}
+          tagColors={tagColors}
+          onToggleTag={toggleTag}
+        />
+      )}
       <main>
-        {activeView === 'list' && (
-          <ListView
-            objects={objects}
+        {activeView === 'catalog' && (
+          <CatalogView
+            objects={filteredObjects}
             activeTags={activeTags}
             tagColors={tagColors}
             onRowClick={setModalObj}
-          />
-        )}
-        {activeView === 'grid' && (
-          <GridView
-            objects={objects}
-            activeTags={activeTags}
-            tagColors={tagColors}
+            displayMode={displayMode}
           />
         )}
         {activeView === 'timeline' && (
           <TimelineView
-            objects={objects}
+            objects={filteredObjects}
             activeTags={activeTags}
             tagColors={tagColors}
           />

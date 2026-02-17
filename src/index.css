@@ -25,8 +25,7 @@ html, body {
 
 header {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   padding: var(--pad);
   position: sticky;
   top: 0;
@@ -41,7 +40,10 @@ header {
 
 .view-toggle {
   display: flex;
+  flex: 1;
   gap: 16px;
+  align-items: center;
+  margin-left: calc(var(--pad) * 2);
 }
 
 .view-toggle button {
@@ -117,6 +119,22 @@ header {
   padding-bottom: 10px;
 }
 
+.table-header span.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.table-header span.sortable:hover {
+  color: var(--fg);
+}
+
+.sort-arrow {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 0.8em;
+  opacity: 0.7;
+}
+
 .table-row {
   cursor: default;
 }
@@ -138,6 +156,47 @@ header {
 .table-row.dimmed,
 .grid-card.dimmed {
   opacity: 0.12;
+}
+
+/* ── Search (header inline) ───────────────────── */
+
+.search-control {
+  flex: 1;
+  min-width: 0;
+  padding: 0 calc(var(--pad) * 1.5);
+}
+
+.search-input {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--fg);
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: 0.03em;
+  padding: 2px 0;
+  outline: none;
+  pointer-events: none;
+  clip-path: inset(0 0 0 100%);
+  transition: clip-path 0.15s ease-out;
+}
+
+.search-input.open {
+  clip-path: inset(0 0 0 0%);
+  pointer-events: auto;
+}
+
+.search-input::placeholder {
+  color: var(--fg-dim);
+}
+
+/* ── Catalog view ─────────────────────────────── */
+
+#view-catalog {
+  position: relative;
 }
 
 /* ── Grid view ────────────────────────────────── */
