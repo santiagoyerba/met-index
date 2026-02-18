@@ -27,7 +27,7 @@ export default function FilterBar({ objects, activeTags, tagColors, onToggleTag 
           const color = tagColors.get(tag);
           const isActive = activeTags.has(tag);
           const chipColor = color
-            ? (isActive ? color : hexToRgba(color, 0.38))
+            ? (isActive ? color : hexToRgba(color, 0.65))
             : undefined;
           return (
             <button

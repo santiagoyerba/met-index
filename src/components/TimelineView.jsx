@@ -242,7 +242,7 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
 
       if (!rows.length) {
         ctx.fillStyle = 'rgba(255,255,255,0.3)';
-        ctx.font = '11px Helvetica, Arial, sans-serif';
+        ctx.font = '11px Geist, Helvetica, Arial, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('NO DATA', W / 2, H / 2);
         return;
@@ -311,7 +311,7 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
           // Country name — top left (close btn is top right)
           if (ep > 0.3) {
             const alpha = Math.min(1, (ep - 0.3) / 0.4);
-            ctx.font = '10px Helvetica, Arial, sans-serif';
+            ctx.font = '10px Geist, Helvetica, Arial, sans-serif';
             ctx.fillStyle = `rgba(255,255,255,${alpha * 0.5})`;
             ctx.textAlign = 'left';
             ctx.fillText(row.name.toUpperCase(), M_AXIS_W, M_HEADER_H - 10);
@@ -322,7 +322,7 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
             const alpha = Math.min(1, (ep - 0.4) / 0.4);
             ctx.textAlign = 'right';
             ctx.fillStyle = `rgba(255,255,255,${0.28 * alpha})`;
-            ctx.font = '9px Helvetica, Arial, sans-serif';
+            ctx.font = '9px Geist, Helvetica, Arial, sans-serif';
             for (let t = 0; t <= 4; t++) {
               const year = Math.round(eMin + ((eMax - eMin) / 4) * t);
               const y = expandedYOf(year);
@@ -392,7 +392,7 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
         if (needsClip) ctx.restore();
 
         // Column headers (country abbreviations — always visible)
-        ctx.font = '9px Helvetica, Arial, sans-serif';
+        ctx.font = '9px Geist, Helvetica, Arial, sans-serif';
         ctx.textAlign = 'center';
         displayRows.forEach((row, i) => {
           const isHovered = hRow === i;
@@ -406,7 +406,7 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
         // Year axis — left side
         ctx.textAlign = 'right';
         ctx.fillStyle = 'rgba(255,255,255,0.25)';
-        ctx.font = '9px Helvetica, Arial, sans-serif';
+        ctx.font = '9px Geist, Helvetica, Arial, sans-serif';
         const { sortedYears } = stateRef.current;
         for (let t = 0; t <= 3; t++) {
           const idx = Math.round((t / 3) * (sortedYears.length - 1));
@@ -480,7 +480,7 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
         // Row name
         if (ep > 0.3) {
           const alpha = Math.min(1, (ep - 0.3) / 0.4);
-          ctx.font = '12px Helvetica, Arial, sans-serif';
+          ctx.font = '12px Geist, Helvetica, Arial, sans-serif';
           ctx.textAlign = 'left';
           ctx.fillStyle = `rgba(255,255,255,${alpha * 0.45})`;
           let name = row.name.toUpperCase();
@@ -493,7 +493,7 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
           const alpha = Math.min(1, (ep - 0.4) / 0.4);
           ctx.textAlign = 'center';
           ctx.fillStyle = `rgba(255,255,255,${0.28 * alpha})`;
-          ctx.font = '12px Helvetica, Arial, sans-serif';
+          ctx.font = '12px Geist, Helvetica, Arial, sans-serif';
           const rowYears = row.works.map(w => w.year);
           const rMin = Math.min(...rowYears);
           const rMax = Math.max(...rowYears);
@@ -568,7 +568,7 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
       if (needsClip) ctx.restore();
 
       // Labels
-      ctx.font = '12px Helvetica, Arial, sans-serif';
+      ctx.font = '12px Geist, Helvetica, Arial, sans-serif';
       ctx.textAlign = 'left';
       displayRows.forEach((row, i) => {
         const isHovered = hRow === i;
@@ -583,7 +583,7 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
       // Year ticks
       ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(255,255,255,0.28)';
-      ctx.font = '12px Helvetica, Arial, sans-serif';
+      ctx.font = '12px Geist, Helvetica, Arial, sans-serif';
       const { sortedYears } = stateRef.current;
       const tickCount = 6;
       const tickYears = [];

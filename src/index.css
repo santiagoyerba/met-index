@@ -1,3 +1,10 @@
+@font-face {
+  font-family: 'Geist';
+  src: url('../node_modules/geist/dist/fonts/geist-sans/Geist-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+}
+
 :root {
   --fs: 16px;
   --lh: 0.975;
@@ -17,7 +24,7 @@ html, body {
   height: 100%;
   background: var(--bg);
   color: var(--fg);
-  font-family: Helvetica, Arial, sans-serif;
+  font-family: 'Geist', Helvetica, Arial, sans-serif;
   font-size: var(--fs);
   line-height: var(--lh);
 }
@@ -396,7 +403,7 @@ main {
   position: fixed;
   pointer-events: none;
   color: var(--fg);
-  font-family: Helvetica, Arial, sans-serif;
+  font-family: 'Geist', Helvetica, Arial, sans-serif;
   font-size: var(--fs);
   line-height: var(--lh);
   text-transform: uppercase;
@@ -445,7 +452,7 @@ main {
   position: fixed;
   pointer-events: none;
   color: var(--fg);
-  font-family: Helvetica, Arial, sans-serif;
+  font-family: 'Geist', Helvetica, Arial, sans-serif;
   font-size: var(--fs);
   line-height: var(--lh);
   text-transform: uppercase;
@@ -494,7 +501,7 @@ main {
   position: fixed;
   pointer-events: none;
   color: var(--fg);
-  font-family: Helvetica, Arial, sans-serif;
+  font-family: 'Geist', Helvetica, Arial, sans-serif;
   font-size: var(--fs);
   line-height: var(--lh);
   text-transform: uppercase;

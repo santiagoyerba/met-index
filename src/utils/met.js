@@ -1,14 +1,33 @@
 export const TAG_FIELDS = ['department', 'objectName'];
 
 export const PALETTE = [
-  '#e8b86d', // amber
-  '#6de8d4', // cyan
-  '#e87d6d', // coral
-  '#9d8de8', // lavender
-  '#8de87d', // green
-  '#6db4e8', // blue
-  '#e88de8', // pink
-  '#e8e06d', // yellow
+  '#C85A28', // terracota naranja
+  '#8B9B4A', // oliva
+  '#3E8F95', // teal
+  '#C03838', // rojo ladrillo
+  '#C8A028', // ocre dorado
+  '#6A9460', // verde bosque
+  '#D4722A', // naranja cálido
+  '#7A9898', // pizarra
+  '#B07830', // ámbar marrón
+  '#A03A58', // borgoña
+  '#6A8A50', // verde musgo
+  '#C4A860', // trigo dorado
+  '#A06838', // marrón rojizo
+  '#5A8878', // teal profundo
+  '#C49028', // dorado bronce
+  '#B03838', // granate
+  '#A07838', // canela
+  '#9EAB54', // verde lima
+  '#A87030', // marrón cálido
+  '#A08830', // mostaza
+  '#9A5A40', // siena
+  '#B07840', // tostado cálido
+  '#9A5040', // tierra
+  '#C8A870', // arena
+  '#A86030', // marrón anaranjado
+  '#7A9A40', // verde oscuro
+  '#B83838', // carmesí
 ];
 
 const NAME_OVERRIDES = {

@@ -183,7 +183,7 @@ export default function StatsView({ objects, activeTags, tagColors }) {
 
       if (!leftFlows.length) {
         ctx.fillStyle = 'rgba(255,255,255,0.3)';
-        ctx.font = '11px Helvetica, Arial, sans-serif';
+        ctx.font = '11px Geist, Helvetica, Arial, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('NO DATA', W / 2, H / 2);
         return;
@@ -337,7 +337,7 @@ export default function StatsView({ objects, activeTags, tagColors }) {
       });
 
       // ── Labels ──────────────────────────────────────────────────────
-      ctx.font = '11px Helvetica, Arial, sans-serif';
+      ctx.font = '11px Geist, Helvetica, Arial, sans-serif';
 
       countryNodes.forEach(n => {
         ctx.globalAlpha = activeCountries.has(n.name) ? 1 : anyHover ? 0.18 : 0.48;
