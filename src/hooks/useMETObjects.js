@@ -17,5 +17,5 @@ export function useMETObjects() {
     }
   }, []);
 
-  return { objects, status, hasMore: false, loading: false, loadMore: () => {}, init };
+  return { objects, status, init };
 }
