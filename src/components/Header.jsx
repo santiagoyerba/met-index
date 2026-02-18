@@ -32,6 +32,10 @@ export default function Header({
           onClick={onSearchToggle}
         >Search</button>
         <button
+          className={showFilters || activeTagCount > 0 ? 'active' : ''}
+          onClick={onFiltersToggle}
+        >Filters{activeTagCount > 0 ? ` (${activeTagCount})` : ''}</button>
+        <button
           className={activeView === 'catalog' && displayMode === 'list' ? 'active' : ''}
           onClick={() => onDisplayModeChange('list')}
         >List</button>
@@ -40,17 +44,17 @@ export default function Header({
           onClick={() => onDisplayModeChange('grid')}
         >Grid</button>
         <button
-          className={showFilters || activeTagCount > 0 ? 'active' : ''}
-          onClick={onFiltersToggle}
-        >Filters{activeTagCount > 0 ? ` (${activeTagCount})` : ''}</button>
-        <button
-          className={activeView === 'stats' ? 'active' : ''}
-          onClick={() => onViewChange('stats')}
-        >Stats</button>
+          className={activeView === 'map' ? 'active' : ''}
+          onClick={() => onViewChange('map')}
+        >Map</button>
         <button
           className={activeView === 'timeline' ? 'active' : ''}
           onClick={() => onViewChange('timeline')}
         >Timeline</button>
+        <button
+          className={activeView === 'stats' ? 'active' : ''}
+          onClick={() => onViewChange('stats')}
+        >Stats</button>
       </div>
     </header>
   );

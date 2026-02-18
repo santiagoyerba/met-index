@@ -1,7 +1,16 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { val } from '../utils/met';
 
 export default function Modal({ obj, onClose }) {
+  const [fullLoaded, setFullLoaded] = useState(false);
+
+  const smallSrc = obj.primaryImageSmall || '';
+  const fullSrc  = obj.primaryImage || obj.primaryImageSmall || '';
+  const sameUrl  = !fullSrc || smallSrc === fullSrc;
+
+  // Reset when object changes
+  useEffect(() => { setFullLoaded(false); }, [obj]);
+
   useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
@@ -15,11 +24,22 @@ export default function Modal({ obj, onClose }) {
   return (
     <div className="modal" onClick={onClose}>
       <div className="modal-frame" onClick={e => e.stopPropagation()}>
+        {/* Thumbnail — visible immediately, sized to determine frame dimensions */}
         <img
           className="modal-img"
-          src={obj.primaryImage || obj.primaryImageSmall || ''}
+          src={smallSrc || fullSrc}
           alt={obj.title || ''}
         />
+        {/* Full-res — absolutely overlaid, fades in when ready */}
+        {!sameUrl && (
+          <img
+            className="modal-img modal-img-full"
+            src={fullSrc}
+            alt=""
+            style={{ opacity: fullLoaded ? 1 : 0 }}
+            onLoad={() => setFullLoaded(true)}
+          />
+        )}
         <div className="modal-caption">
           <p className="modal-caption-title">{val(obj.title)}</p>
           {obj.artistDisplayName && <p className="modal-caption-sub">{val(obj.artistDisplayName)}</p>}

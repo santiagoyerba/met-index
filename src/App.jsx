@@ -4,6 +4,7 @@ import FilterBar from './components/FilterBar';
 import CatalogView from './components/CatalogView';
 import TimelineView from './components/TimelineView';
 import StatsView from './components/StatsView';
+import MapView from './components/MapView';
 import Modal from './components/Modal';
 import { useMETObjects } from './hooks/useMETObjects';
 import { buildTagCounts, PALETTE } from './utils/met';
@@ -104,6 +105,14 @@ export default function App() {
             objects={filteredObjects}
             activeTags={activeTags}
             tagColors={tagColors}
+          />
+        )}
+        {activeView === 'map' && (
+          <MapView
+            objects={filteredObjects}
+            activeTags={activeTags}
+            tagColors={tagColors}
+            onNodeClick={setModalObj}
           />
         )}
         {activeView === 'catalog' && <div id="status">{status}</div>}

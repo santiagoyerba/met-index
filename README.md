@@ -8,18 +8,19 @@ A web index of religious and devotional artworks from the [Metropolitan Museum o
 
 ## What it does
 
-Fetches objects from the MET public API and displays them in four views:
+Fetches objects from the MET public API and displays them in five views:
 
 - **List** — sortable table with columns: Type, Title, Artist, Date, Period, Location, Dimensions. Click any column header to sort; click again to reverse.
 - **Grid** — image thumbnails in a responsive grid. Click an image to open the detail modal. Cards without an available image show a text placeholder and are not clickable.
-- **Stats** — canvas-based Sankey chart: Country → Object Type → Period. Node heights use a square-root scale so dominant categories don't overwhelm smaller ones. Hover any node or flow band to highlight its connections; click to pin a node and keep it highlighted while exploring. Ambient colors are assigned per country and propagate through the chart.
+- **Map** — SVG world map (Natural Earth projection). Countries with artworks are highlighted; brightness scales with artwork count. Click a country to zoom in and scatter artwork dots across its geography. Dots with images are clickable and open the detail modal; dots without images are dimmed and non-interactive. Overseas territories are excluded from zoom bounds.
 - **Timeline** — canvas-based node graph. Rows by country (derived from country, culture, or artist nationality), nodes are individual artworks, left-to-right chronological axis with density-based spacing. Click a row to expand it full-width; click a node to open the detail modal.
+- **Stats** — canvas-based Sankey chart: Country → Object Type → Period. Node heights use a square-root scale so dominant categories don't overwhelm smaller ones. Hover any node or flow band to highlight its connections; click to pin a node and keep it highlighted while exploring. Ambient colors are assigned per country and propagate through the chart.
 
-The header provides **Search** (expands inline, filters by title, artist, or type across all views), a **List/Grid** toggle, a **Filters** toggle, **Stats** and **Timeline** view buttons.
+The header provides **Search** (expands inline, filters by title, artist, or type across all views), **Filters**, a **List/Grid** toggle, and **Map**, **Timeline**, **Stats** view buttons.
 
-Clicking a row in List view, an image card in Grid, or a node in expanded Timeline opens a detail modal overlaid on a semi-transparent background, showing the full image with title, artist, medium, and credit line.
+Clicking a row in List view, an image card in Grid, a dot in Map, or a node in expanded Timeline opens a detail modal. The thumbnail appears immediately and the full-resolution image fades in when ready.
 
-Filter chips (department, object type) let you narrow down results. Each active filter is assigned a color from a palette; matching items are highlighted in that color across all views — text in List, bottom border in Grid, node fill in Timeline and Stats. Non-matching items are dimmed rather than hidden. Search and filters apply simultaneously.
+Filter chips (department, object type) let you narrow down results. Each active filter is assigned a color from a palette; matching items are highlighted in that color across all views — text in List, bottom border in Grid, node fill in Timeline and Stats, country stroke and dot color in Map. Non-matching items are dimmed rather than hidden. Search and filters apply simultaneously.
 
 All objects load instantly from a pre-built `data.json` generated at deploy time. No API calls at runtime.
 
@@ -39,6 +40,7 @@ Then open `http://localhost:5173/met-index/`.
 - [Vite](https://vite.dev/) + [React](https://react.dev/)
 - Plain CSS (no framework)
 - Canvas 2D API for Stats and Timeline visualizations
+- [D3](https://d3js.org/) + [world-atlas](https://github.com/topojson/world-atlas) + [topojson-client](https://github.com/topojson/topojson-client) for the Map view
 - [MET Museum Collection API](https://metmuseum.github.io/) (public, no auth required)
 
 ## Deploy
