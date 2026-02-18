@@ -1,14 +1,13 @@
 import { useEffect, useRef, useMemo } from 'react';
 import {
-  geoNaturalEarth1,
+  geoOrthographic,
   geoPath,
   geoGraticule,
   geoBounds,
   geoContains,
   geoCentroid,
   select,
-  zoom as d3Zoom,
-  zoomIdentity,
+  drag as d3Drag,
 } from 'd3';
 import { feature } from 'topojson-client';
 import worldData from 'world-atlas/countries-110m.json';
@@ -97,10 +96,10 @@ const graticuleGen  = geoGraticule();
 
 // ─────────────────────────────────────────────────────────────────────
 export default function MapView({ objects, activeTags, tagColors, onNodeClick }) {
-  const wrapRef    = useRef(null);
-  const svgRef     = useRef(null);
-  const closeRef   = useRef(null);
-  const tooltipRef = useRef(null);
+  const wrapRef          = useRef(null);
+  const svgRef           = useRef(null);
+  const particleCanvasRef = useRef(null);
+  const tooltipRef       = useRef(null);
   const d3Ref      = useRef({});
   const filterRef  = useRef({ activeTags, tagColors });
   filterRef.current = { activeTags, tagColors };
@@ -144,9 +143,8 @@ export default function MapView({ objects, activeTags, tagColors, onNodeClick })
   useEffect(() => {
     const wrap    = wrapRef.current;
     const svgEl   = svgRef.current;
-    const closeBtn = closeRef.current;
     const tooltip = tooltipRef.current;
-    if (!wrap || !svgEl || !closeBtn || !tooltip) return;
+    if (!wrap || !svgEl || !tooltip) return;
 
     const svg       = select(svgEl);
     const g         = svg.select('g.map-g');
@@ -155,18 +153,97 @@ export default function MapView({ objects, activeTags, tagColors, onNodeClick })
     let W = wrap.offsetWidth;
     let H = wrap.offsetHeight;
 
-    const projection = geoNaturalEarth1();
-    const pathGen    = geoPath(projection);
+    const DEFAULT_ROTATION = [-10, -35, 0];
+    let defaultScale = 1;
+    let defaultTranslate = [0, 0];
+
+    const projection = geoOrthographic()
+      .clipAngle(90)
+      .precision(0.3)
+      .rotate(DEFAULT_ROTATION);
+    const pathGen = geoPath(projection);
 
     let zoomedCountry = null;
     let zoomedFeature = null;
+    let isZoomed = false;
 
-    const zoomBehavior = d3Zoom()
-      .scaleExtent([1, 14])
-      .translateExtent([[0, 0], [W, H]])
-      .on('zoom', event => g.attr('transform', event.transform));
+    // ── Fit projection to viewport (horizon effect) ────────────────
+    function fitProjection() {
+      const R = Math.max(W / 2, H * 0.85);
+      defaultScale = R;
+      defaultTranslate = [W / 2, H * 0.08 + R];
+      projection.scale(R).translate(defaultTranslate);
+    }
 
-    svg.call(zoomBehavior);
+    // ── Visibility check: is [lon,lat] on the front hemisphere? ───
+    // geoOrthographic's clipAngle(90) only clips paths via streaming;
+    // direct projection() calls don't apply it — we check manually.
+    function isVisible(lon, lat) {
+      const r = projection.rotate();
+      const cLon = -r[0] * Math.PI / 180;
+      const cLat = -r[1] * Math.PI / 180;
+      const pLon = lon * Math.PI / 180;
+      const pLat = lat * Math.PI / 180;
+      return Math.sin(pLat) * Math.sin(cLat) +
+             Math.cos(pLat) * Math.cos(cLat) * Math.cos(pLon - cLon) > 0;
+    }
+
+    // ── Redraw all paths + reproject dots ─────────────────────────
+    function redrawPaths() {
+      d3Ref.current.sphere?.attr('d', pathGen({ type: 'Sphere' }));
+      d3Ref.current.graticule?.attr('d', pathGen);
+      d3Ref.current.paths?.attr('d', pathGen);
+      if (d3Ref.current.dots) {
+        d3Ref.current.dots
+          .attr('cx', d => { const p = projection([d.lon, d.lat]); return p ? p[0] : -9999; })
+          .attr('cy', d => { const p = projection([d.lon, d.lat]); return p ? p[1] : -9999; })
+          .attr('opacity', d => isVisible(d.lon, d.lat) ? 1 : 0);
+      }
+    }
+
+    // ── Animated transition of rotation + scale + translate ───────
+    function animateToState(targetRot, targetScale, targetTranslate, onDone) {
+      if (typeof targetTranslate === 'function') { onDone = targetTranslate; targetTranslate = null; }
+      const startRot       = projection.rotate();
+      const startScale     = projection.scale();
+      const startTranslate = projection.translate();
+      let t = 0;
+      const interval = setInterval(() => {
+        t = Math.min(1, t + 1 / 45);
+        const e = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+        projection
+          .rotate([
+            startRot[0] + (targetRot[0] - startRot[0]) * e,
+            startRot[1] + (targetRot[1] - startRot[1]) * e,
+            0,
+          ])
+          .scale(startScale + (targetScale - startScale) * e);
+        if (targetTranslate) {
+          projection.translate([
+            startTranslate[0] + (targetTranslate[0] - startTranslate[0]) * e,
+            startTranslate[1] + (targetTranslate[1] - startTranslate[1]) * e,
+          ]);
+        }
+        redrawPaths();
+        if (t >= 1) { clearInterval(interval); onDone?.(); }
+      }, 16);
+    }
+
+    // ── Drag to rotate ────────────────────────────────────────────
+    const drag = d3Drag()
+      .on('drag', event => {
+        const sens = 80 / projection.scale();
+        const [l, p] = projection.rotate();
+        projection.rotate([
+          l + event.dx * sens,
+          Math.max(-90, Math.min(90, p - event.dy * sens)),
+          0,
+        ]);
+        redrawPaths();
+      })
+      .on('end', () => {});
+
+    svg.call(drag);
 
     // ── Tooltip helper ─────────────────────────────────────────────
     function positionTooltip(event) {
@@ -186,83 +263,86 @@ export default function MapView({ objects, activeTags, tagColors, onNodeClick })
       const fc  = filterColorsRef.current.get(name);
       const any = filterRef.current.activeTags.size > 0;
       if (any && fc)  return hexToRgba(fc, 0.18);
-      if (any && !fc) return 'rgba(255,255,255,0.03)';
-      return 'rgba(255,255,255,0.07)';
+      if (any && !fc) return 'rgba(255,255,255,0.06)';
+      return 'rgba(255,255,255,0.14)';
     }
 
     function getStroke(d) {
       const name  = getCountryName(d);
       const count = name ? countsRef.current.get(name) : 0;
-      if (!count) return 'rgba(255,255,255,0.14)';
+      if (!count) return 'rgba(255,255,255,0.22)';
       const fc  = filterColorsRef.current.get(name);
       const any = filterRef.current.activeTags.size > 0;
-      if (any && fc)  return hexToRgba(fc, 0.65);
-      if (any && !fc) return 'rgba(255,255,255,0.2)';
-      return 'rgba(255,255,255,0.5)';
+      if (any && fc)  return hexToRgba(fc, 0.8);
+      if (any && !fc) return 'rgba(255,255,255,0.3)';
+      return 'rgba(255,255,255,0.65)';
     }
 
     function getDotFill(obj) {
       const { activeTags, tagColors } = filterRef.current;
-      if (activeTags.size === 0) return 'rgba(255,255,255,0.7)';
+      if (activeTags.size === 0) return 'rgba(255,255,255,0.85)';
       const dept = normalizeTag(obj.department || '', 'department');
       const type = normalizeTag(obj.objectName  || '', 'objectName');
       for (const tag of activeTags) {
-        if (dept === tag || type === tag) return tagColors.get(tag) || 'rgba(255,255,255,0.7)';
+        if (dept === tag || type === tag) return tagColors.get(tag) || 'rgba(255,255,255,0.85)';
       }
-      return 'rgba(255,255,255,0.12)';
+      return 'rgba(255,255,255,0.2)';
     }
 
-    // ── Dot rendering ──────────────────────────────────────────────
-    function renderDots(feat, name) {
+    // ── Dot rendering (all countries) ─────────────────────────────
+    function renderAllDots() {
       gDots.selectAll('.artwork-dot').remove();
-      const works = objectsRef.current.filter(o => getCountry(o) === name);
-      if (!works.length) return;
+      const allPoints = [];
 
-      const mainFeat = getMainFeature(feat);
-      const [[lonMin, latMin], [lonMax, latMax]] = geoBounds(mainFeat);
+      countriesGeo.features.forEach(feat => {
+        const name = getCountryName(feat);
+        if (!name) return;
+        const works = objectsRef.current.filter(o => getCountry(o) === name);
+        if (!works.length) return;
 
-      const points = [];
-      let attempts = 0;
-      while (points.length < works.length && attempts < works.length * 40) {
-        const lon = lonMin + Math.random() * (lonMax - lonMin);
-        const lat = latMin + Math.random() * (latMax - latMin);
-        if (geoContains(mainFeat, [lon, lat])) {
-          const [sx, sy] = projection([lon, lat]);
-          const w = works[points.length];
-          points.push({ x: sx, y: sy, obj: w, hasImage: !!(w.primaryImageSmall || w.primaryImage) });
+        const mainFeat = getMainFeature(feat);
+        const [[lonMin, latMin], [lonMax, latMax]] = geoBounds(mainFeat);
+        const [clon, clat] = geoCentroid(mainFeat);
+
+        const points = [];
+        let attempts = 0;
+        while (points.length < works.length && attempts < works.length * 40) {
+          const lon = lonMin + Math.random() * (lonMax - lonMin);
+          const lat = latMin + Math.random() * (latMax - latMin);
+          if (geoContains(mainFeat, [lon, lat])) {
+            const proj = projection([lon, lat]);
+            if (!proj) { attempts++; continue; }
+            const w = works[points.length];
+            points.push({ lon, lat, country: name, obj: w, hasImage: !!(w.primaryImageSmall || w.primaryImage) });
+          }
+          attempts++;
         }
-        attempts++;
-      }
-      // Fallback: place remaining around centroid
-      if (points.length < works.length) {
-        const [cx, cy] = projection(geoCentroid(mainFeat));
+        // Fallback near centroid
         while (points.length < works.length) {
-          const a = Math.random() * Math.PI * 2;
-          const r = Math.random() * 8;
+          const jlon = clon + (Math.random() - 0.5) * 2;
+          const jlat = clat + (Math.random() - 0.5) * 2;
           const w = works[points.length];
-          points.push({ x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r, obj: w, hasImage: !!(w.primaryImageSmall || w.primaryImage) });
+          points.push({ lon: jlon, lat: jlat, country: name, obj: w, hasImage: !!(w.primaryImageSmall || w.primaryImage) });
         }
-      }
+
+        allPoints.push(...points);
+      });
 
       const dots = gDots.selectAll('.artwork-dot')
-        .data(points)
+        .data(allPoints)
         .join('circle')
         .attr('class', 'artwork-dot')
-        .attr('cx', d => d.x)
-        .attr('cy', d => d.y)
-        .attr('r', 1.2)
-        .attr('fill', d => d.hasImage ? getDotFill(d.obj) : 'rgba(255,255,255,0.18)')
-        .attr('stroke', d => d.hasImage ? 'transparent' : 'none')
-        .attr('stroke-width', d => d.hasImage ? 7 : 0)
-        .attr('opacity', 0)
+        .attr('cx', d => { const p = projection([d.lon, d.lat]); return p ? p[0] : -9999; })
+        .attr('cy', d => { const p = projection([d.lon, d.lat]); return p ? p[1] : -9999; })
+        .attr('r', 1.8)
+        .attr('fill', d => d.hasImage ? getDotFill(d.obj) : 'rgba(255,255,255,0.3)')
+        .attr('opacity', d => isVisible(d.lon, d.lat) ? 1 : 0)
         .style('cursor', d => d.hasImage ? 'pointer' : 'default');
-
-      dots.transition().delay(380).duration(280).attr('opacity', 1);
 
       dots
         .on('mouseenter', function(event, d) {
           if (d.hasImage) {
-            select(this).raise().attr('r', 2.5).attr('fill', '#fff').attr('opacity', 1);
+            select(this).raise().attr('r', 3).attr('fill', '#fff');
           }
           const title = d.obj.title || d.obj.objectName || '–';
           tooltip.textContent = title.length > 60 ? title.slice(0, 59) + '…' : title;
@@ -272,7 +352,7 @@ export default function MapView({ objects, activeTags, tagColors, onNodeClick })
         .on('mousemove', positionTooltip)
         .on('mouseleave', function(event, d) {
           if (d.hasImage) {
-            select(this).attr('r', 1.2).attr('fill', getDotFill(d.obj)).attr('opacity', 1);
+            select(this).attr('r', d.country === zoomedCountry ? 2.8 : 1.8).attr('fill', getDotFill(d.obj));
           }
           tooltip.style.display = 'none';
         })
@@ -285,20 +365,47 @@ export default function MapView({ objects, activeTags, tagColors, onNodeClick })
       d3Ref.current.dots = dots;
     }
 
+    function highlightCountryDots(name) {
+      if (!d3Ref.current.dots) return;
+      d3Ref.current.dots
+        .attr('r', d => d.country === name ? 2.8 : 1.8)
+        .attr('opacity', d => {
+          if (!isVisible(d.lon, d.lat)) return 0;
+          return d.country === name ? 1 : 0.25;
+        });
+    }
+
+    function resetDotHighlight() {
+      if (!d3Ref.current.dots) return;
+      d3Ref.current.dots
+        .attr('r', 1.8)
+        .attr('opacity', d => isVisible(d.lon, d.lat) ? 1 : 0);
+    }
+
     // ── Reset zoom ────────────────────────────────────────────────
     function resetZoom() {
+      isZoomed = false;
       zoomedCountry = null;
       zoomedFeature = null;
-      closeBtn.classList.remove('visible');
-      gDots.selectAll('.artwork-dot').remove();
-      d3Ref.current.dots = null;
       tooltip.style.display = 'none';
-      svg.transition().duration(600).call(zoomBehavior.transform, zoomIdentity);
+      resetDotHighlight();
+      animateToState(DEFAULT_ROTATION, defaultScale, defaultTranslate);
     }
 
     // ── Initial draw ──────────────────────────────────────────────
     function draw() {
-      projection.fitSize([W, H], countriesGeo);
+      fitProjection();
+
+      // Globe sphere outline
+      const sphere = gCountries.selectAll('.globe-sphere')
+        .data([null])
+        .join('path')
+        .attr('class', 'globe-sphere')
+        .attr('d', pathGen({ type: 'Sphere' }))
+        .attr('fill', 'rgba(255,255,255,0.03)')
+        .attr('stroke', 'rgba(255,255,255,0.18)')
+        .attr('stroke-width', 0.5);
+      d3Ref.current.sphere = sphere;
 
       gCountries.selectAll('.graticule')
         .data([graticuleGen()])
@@ -306,8 +413,8 @@ export default function MapView({ objects, activeTags, tagColors, onNodeClick })
         .attr('class', 'graticule')
         .attr('d', pathGen)
         .attr('fill', 'none')
-        .attr('stroke', 'rgba(255,255,255,0.05)')
-        .attr('stroke-width', 0.4);
+        .attr('stroke', 'rgba(255,255,255,0.07)')
+        .attr('stroke-width', 0.3);
 
       const paths = gCountries.selectAll('.country')
         .data(countriesGeo.features)
@@ -349,23 +456,24 @@ export default function MapView({ objects, activeTags, tagColors, onNodeClick })
 
           zoomedCountry = name;
           zoomedFeature = d;
-          closeBtn.classList.add('visible');
+          isZoomed = true;
 
-          const [[x0, y0], [x1, y1]] = getMainBounds(d, pathGen);
-          const k  = Math.min(14, 0.82 / Math.max((x1 - x0) / W, (y1 - y0) / H));
-          const tx = W / 2 - k * (x0 + x1) / 2;
-          const ty = H / 2 - k * (y0 + y1) / 2;
-
-          svg.transition().duration(700)
-            .call(zoomBehavior.transform, zoomIdentity.translate(tx, ty).scale(k));
-
-          renderDots(d, name);
+          const mainFeat = getMainFeature(d);
+          const centroid = geoCentroid(mainFeat);
+          const targetRot = [-centroid[0], -centroid[1], 0];
+          const [[lonMin, latMin], [lonMax, latMax]] = geoBounds(mainFeat);
+          const centerLat = (latMin + latMax) / 2 * Math.PI / 180;
+          const latSpan = Math.max(latMax - latMin, 5) * Math.PI / 180;
+          const lonSpan = Math.max(lonMax - lonMin, 5) * Math.cos(centerLat) * Math.PI / 180;
+          const targetScale = Math.min(H * 0.65 / latSpan, W * 0.65 / lonSpan, defaultScale * 8);
+          animateToState(targetRot, targetScale, [W / 2, H / 2], () => highlightCountryDots(name));
         });
 
-      d3Ref.current.paths    = paths;
-      d3Ref.current.pathGen  = pathGen;
+      d3Ref.current.paths     = paths;
+      d3Ref.current.pathGen   = pathGen;
       d3Ref.current.graticule = gCountries.selectAll('.graticule');
-      d3Ref.current.renderDots = renderDots;
+
+      renderAllDots();
     }
 
     // ── Recolor (no re-layout) ────────────────────────────────────
@@ -380,17 +488,88 @@ export default function MapView({ objects, activeTags, tagColors, onNodeClick })
         });
       // Re-color existing dots
       if (d3Ref.current.dots) {
-        d3Ref.current.dots.attr('fill', d => d.hasImage ? getDotFill(d.obj) : 'rgba(255,255,255,0.18)');
-      }
-      // Re-render dots if a country is zoomed (objects may have changed)
-      if (zoomedCountry && zoomedFeature) {
-        renderDots(zoomedFeature, zoomedCountry);
+        d3Ref.current.dots.attr('fill', d => d.hasImage ? getDotFill(d.obj) : 'rgba(255,255,255,0.3)');
       }
     }
     redrawColorsRef.current = redrawColors;
 
     svg.on('click.bg', resetZoom);
-    closeBtn.addEventListener('click', resetZoom);
+
+    // ── Background particles ───────────────────────────────────
+    const pEl  = particleCanvasRef.current;
+    const pCtx = pEl ? pEl.getContext('2d') : null;
+    let particles = [];
+    let particleRaf = null;
+    let lastParticleTs = 0;
+    const PARTICLE_COUNT = 220;
+
+    function makeParticle() {
+      const pw = pEl.offsetWidth, ph = pEl.offsetHeight;
+      return {
+        x: Math.random() * pw,
+        y: Math.random() * ph,
+        vx: (Math.random() * 0.28 + 0.04) * (Math.random() < 0.5 ? 1 : -1),
+        vy: (Math.random() - 0.5) * 0.12,
+        r: 0.8 + Math.random() * 1.4,
+        alpha: 0.15 + Math.random() * 0.3,
+      };
+    }
+
+    function initParticles() {
+      particles = Array.from({ length: PARTICLE_COUNT }, makeParticle);
+    }
+
+    function resizeParticleCanvas() {
+      if (!pEl || !pCtx) return;
+      const dpr = window.devicePixelRatio || 1;
+      pEl.width  = pEl.offsetWidth  * dpr;
+      pEl.height = pEl.offsetHeight * dpr;
+      pCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      initParticles();
+    }
+
+    function tickAndDrawParticles() {
+      if (!pEl || !pCtx) return;
+      const pw = pEl.offsetWidth, ph = pEl.offsetHeight;
+      pCtx.clearRect(0, 0, pw, ph);
+
+      // Clip to the area outside the globe sphere
+      const [tx, ty] = projection.translate();
+      const sr = projection.scale();
+      pCtx.save();
+      pCtx.beginPath();
+      pCtx.rect(0, 0, pw, ph);
+      pCtx.arc(tx, ty, sr, 0, Math.PI * 2, true); // anticlockwise = hole
+      pCtx.clip();
+
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0) p.x = pw;
+        if (p.x > pw) p.x = 0;
+        if (p.y < 0) p.y = ph;
+        if (p.y > ph) p.y = 0;
+        pCtx.beginPath();
+        pCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        pCtx.fillStyle = `rgba(255,255,255,${p.alpha.toFixed(2)})`;
+        pCtx.fill();
+      });
+
+      pCtx.restore();
+    }
+
+    function particleLoop(ts) {
+      if (ts - lastParticleTs > 42) {
+        lastParticleTs = ts;
+        tickAndDrawParticles();
+      }
+      particleRaf = requestAnimationFrame(particleLoop);
+    }
+
+    if (pEl && pCtx) {
+      resizeParticleCanvas();
+      particleRaf = requestAnimationFrame(particleLoop);
+    }
 
     draw();
 
@@ -398,22 +577,17 @@ export default function MapView({ objects, activeTags, tagColors, onNodeClick })
     const ro = new ResizeObserver(entries => {
       const { width, height } = entries[0].contentRect;
       W = width; H = height;
-      zoomBehavior.translateExtent([[0, 0], [W, H]]);
-      projection.fitSize([W, H], countriesGeo);
-      d3Ref.current.graticule?.attr('d', pathGen);
-      d3Ref.current.paths?.attr('d', pathGen);
-      // Reposition dots on resize
-      if (d3Ref.current.dots && zoomedFeature) {
-        renderDots(zoomedFeature, zoomedCountry);
-      }
+      fitProjection();
+      redrawPaths();
+      resizeParticleCanvas();
     });
     ro.observe(wrap);
 
     return () => {
       ro.disconnect();
-      svg.on('.zoom', null);
+      if (particleRaf) cancelAnimationFrame(particleRaf);
+      svg.on('.drag', null);
       svg.on('click.bg', null);
-      closeBtn.removeEventListener('click', resetZoom);
       tooltip.style.display = 'none';
     };
   }, []);
@@ -425,13 +599,13 @@ export default function MapView({ objects, activeTags, tagColors, onNodeClick })
 
   return (
     <div id="view-map" ref={wrapRef}>
+      <canvas ref={particleCanvasRef} id="map-particles" />
       <svg ref={svgRef}>
         <g className="map-g">
           <g className="countries-layer" />
           <g className="dots-layer" />
         </g>
       </svg>
-      <button ref={closeRef} id="map-close">Close</button>
       <div ref={tooltipRef} id="map-tooltip" />
     </div>
   );

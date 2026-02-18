@@ -419,32 +419,22 @@ main {
   overflow: hidden;
 }
 
-#view-map svg {
+#map-particles {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   display: block;
+  pointer-events: none;
+  z-index: 0;
 }
 
-#map-close {
-  position: absolute;
-  top: var(--pad);
-  right: var(--pad);
-  background: none;
-  border: none;
-  color: var(--fg-dim);
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
-  cursor: pointer;
-  padding: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  z-index: 1;
-  display: none;
-}
-
-#map-close.visible {
+#view-map svg {
+  position: relative;
+  width: 100%;
+  height: 100%;
   display: block;
+  z-index: 1;
 }
 
 #map-tooltip {

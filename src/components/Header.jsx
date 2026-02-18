@@ -62,6 +62,7 @@ export default function Header({
           </button>
           <button className={activeView === 'catalog' && displayMode === 'list' ? 'active' : ''} onClick={() => { onDisplayModeChange('list'); closeMenu(); }}>List</button>
           <button className={activeView === 'catalog' && displayMode === 'grid' ? 'active' : ''} onClick={() => { onDisplayModeChange('grid'); closeMenu(); }}>Grid</button>
+          <button className={activeView === 'map' ? 'active' : ''} onClick={() => { onViewChange('map'); closeMenu(); }}>Map</button>
         </nav>
       )}
     </header>

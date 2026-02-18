@@ -8,11 +8,11 @@ A web index of religious and devotional artworks from the [Metropolitan Museum o
 
 ## What it does
 
-Fetches objects from the MET public API and displays them in five views. **Timeline and Stats are desktop-only** — on mobile, only List, Grid, and Map are available.
+Fetches objects from the MET public API and displays them in five views. **Timeline and Stats are desktop-only** — on mobile, List, Grid, and Map are available.
 
 - **List** — sortable table with columns: Type, Title, Artist, Date, Period, Location, Dimensions. Click any column header to sort; click again to reverse.
 - **Grid** — image thumbnails in a responsive grid. Click an image to open the detail modal. Cards without an available image show a text placeholder and are not clickable.
-- **Map** — SVG world map (Natural Earth projection). Countries with artworks are highlighted; brightness scales with artwork count. Click a country to zoom in and scatter artwork dots across its geography. Dots with images are clickable and open the detail modal; dots without images are dimmed and non-interactive. Overseas territories are excluded from zoom bounds.
+- **Map** — Interactive orthographic globe with a horizon effect. Countries with artworks are highlighted; drag to rotate the globe. Artwork dots are always visible across all countries. Click a country to animate the globe to face it, zoom to fit it (scale computed from geographic bounds, excluding overseas territories), and enlarge its dots. Click outside to reset. Dots with images are clickable and open the detail modal. A starfield of ambient particles fills the space outside the globe.
 - **Timeline** — canvas-based node graph. Rows by country (derived from country, culture, or artist nationality), nodes are individual artworks, left-to-right chronological axis with density-based spacing. Click a row to expand it full-width; click a node to open the detail modal.
 - **Stats** — canvas-based Sankey chart: Country → Object Type → Period. Node heights use a square-root scale so dominant categories don't overwhelm smaller ones. Hover any node or flow band to highlight its connections; click to pin a node and keep it highlighted while exploring. Ambient colors are assigned per country and propagate through the chart.
 
@@ -39,7 +39,7 @@ Then open `http://localhost:5173/met-index/`.
 
 - [Vite](https://vite.dev/) + [React](https://react.dev/)
 - Plain CSS (no framework)
-- Canvas 2D API for Stats and Timeline visualizations
+- Canvas 2D API for Stats, Timeline, and Map particle layer
 - [D3](https://d3js.org/) + [world-atlas](https://github.com/topojson/world-atlas) + [topojson-client](https://github.com/topojson/topojson-client) for the Map view
 - [MET Museum Collection API](https://metmuseum.github.io/) (public, no auth required)
 
