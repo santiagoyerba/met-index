@@ -391,11 +391,8 @@ main {
 /* ── Stats view ───────────────────────────────── */
 
 #view-stats {
-  position: fixed;
-  inset: 0;
-  top: 0;
-  background: var(--bg);
-  z-index: 5;
+  height: 100%;
+  position: relative;
 }
 
 #stats-canvas {
@@ -408,7 +405,6 @@ main {
   display: none;
   position: fixed;
   pointer-events: none;
-  background: none;
   color: var(--fg);
   font-family: Helvetica, Arial, sans-serif;
   font-size: var(--fs);

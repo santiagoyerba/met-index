@@ -3,6 +3,7 @@ import Header from './components/Header';
 import FilterBar from './components/FilterBar';
 import CatalogView from './components/CatalogView';
 import TimelineView from './components/TimelineView';
+import StatsView from './components/StatsView';
 import Modal from './components/Modal';
 import { useMETObjects } from './hooks/useMETObjects';
 import { buildTagCounts, PALETTE } from './utils/met';
@@ -98,7 +99,14 @@ export default function App() {
             onNodeClick={setModalObj}
           />
         )}
-        {activeView !== 'timeline' && <div id="status">{status}</div>}
+        {activeView === 'stats' && (
+          <StatsView
+            objects={filteredObjects}
+            activeTags={activeTags}
+            tagColors={tagColors}
+          />
+        )}
+        {activeView === 'catalog' && <div id="status">{status}</div>}
       </main>
       {modalObj && <Modal obj={modalObj} onClose={() => setModalObj(null)} />}
     </div>

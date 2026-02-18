@@ -44,6 +44,10 @@ export default function Header({
           onClick={onFiltersToggle}
         >Filters{activeTagCount > 0 ? ` (${activeTagCount})` : ''}</button>
         <button
+          className={activeView === 'stats' ? 'active' : ''}
+          onClick={() => onViewChange('stats')}
+        >Stats</button>
+        <button
           className={activeView === 'timeline' ? 'active' : ''}
           onClick={() => onViewChange('timeline')}
         >Timeline</button>
