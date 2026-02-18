@@ -8,7 +8,7 @@ A web index of religious and devotional artworks from the [Metropolitan Museum o
 
 ## What it does
 
-Fetches objects from the MET public API and displays them in five views:
+Fetches objects from the MET public API and displays them in five views. **Timeline and Stats are desktop-only** — on mobile, only List, Grid, and Map are available.
 
 - **List** — sortable table with columns: Type, Title, Artist, Date, Period, Location, Dimensions. Click any column header to sort; click again to reverse.
 - **Grid** — image thumbnails in a responsive grid. Click an image to open the detail modal. Cards without an available image show a text placeholder and are not clickable.

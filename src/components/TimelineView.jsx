@@ -1,14 +1,37 @@
 import { useEffect, useRef } from 'react';
-import { TAG_FIELDS, normalizeTag, getMatchingColors, hexToRgba } from '../utils/met';
+import { TAG_FIELDS, normalizeTag, hexToRgba } from '../utils/met';
 
+// ── Desktop constants ──────────────────────────────────────────────────────
 const TOP_N = 18;
 const LABEL_W = 210;
-const LABEL_X = 20; // left-margin for country labels
+const LABEL_X = 20;
 const PAD_R = 40;
 const PAD_T = 20;
 const PAD_B = 48;
+
+// ── Mobile constants ───────────────────────────────────────────────────────
+const M_HEADER_H = 36;   // top area for country abbreviation headers
+const M_AXIS_W = 38;     // left margin for year labels
+const M_PAD_B = 24;      // bottom padding
+const M_N_COLS = 8;      // max countries visible in mobile normal view
+const MOBILE_BREAK = 520;
+
 const NODE_R = 3.5;
 const WHITE = '#ffffff';
+
+const COUNTRY_ABBR = {
+  'Italy': 'IT',         'Netherlands': 'NL',   'France': 'FR',
+  'Germany': 'DE',       'Spain': 'ES',          'United Kingdom': 'UK',
+  'United States': 'US', 'Greece': 'GR',         'Byzantine': 'BYZ',
+  'China': 'CN',         'Japan': 'JP',          'Korea': 'KR',
+  'India': 'IN',         'Iran': 'IR',           'Turkey': 'TR',
+  'Mexico': 'MX',        'Austria': 'AT',         'Portugal': 'PT',
+  'Switzerland': 'CH',   'Czech Republic': 'CZ', 'Hungary': 'HU',
+  'Poland': 'PL',        'Russia': 'RU',         'Sweden': 'SE',
+  'Belgium': 'BE',
+};
+
+// ── Helper functions ───────────────────────────────────────────────────────
 
 function getYear(obj) {
   let year = obj.objectBeginDate;
@@ -22,49 +45,27 @@ function getYear(obj) {
 function hashJitter(id) {
   let h = 0;
   const s = String(id);
-  for (let i = 0; i < s.length; i++) {
-    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
-  }
+  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
   return ((h & 0xff) / 255) * 2 - 1;
 }
 
 function hashJitter2(id) {
   let h = 0;
   const s = 'x' + String(id);
-  for (let i = 0; i < s.length; i++) {
-    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
-  }
+  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
   return ((h & 0xff) / 255) * 2 - 1;
 }
 
 const NATIONALITY_TO_COUNTRY = {
-  'italian': 'Italy',
-  'dutch': 'Netherlands',
-  'netherlandish': 'Netherlands',
-  'flemish': 'Belgium',
-  'french': 'France',
-  'german': 'Germany',
-  'spanish': 'Spain',
-  'british': 'United Kingdom',
-  'english': 'United Kingdom',
-  'american': 'United States',
-  'greek': 'Greece',
-  'byzantine': 'Byzantine',
-  'chinese': 'China',
-  'japanese': 'Japan',
-  'korean': 'Korea',
-  'indian': 'India',
-  'persian': 'Iran',
-  'turkish': 'Turkey',
-  'mexican': 'Mexico',
-  'austrian': 'Austria',
-  'portuguese': 'Portugal',
-  'swiss': 'Switzerland',
-  'czech': 'Czech Republic',
-  'hungarian': 'Hungary',
-  'polish': 'Poland',
-  'russian': 'Russia',
-  'swedish': 'Sweden',
+  'italian': 'Italy',       'dutch': 'Netherlands',    'netherlandish': 'Netherlands',
+  'flemish': 'Belgium',     'french': 'France',        'german': 'Germany',
+  'spanish': 'Spain',       'british': 'United Kingdom','english': 'United Kingdom',
+  'american': 'United States','greek': 'Greece',       'byzantine': 'Byzantine',
+  'chinese': 'China',       'japanese': 'Japan',       'korean': 'Korea',
+  'indian': 'India',        'persian': 'Iran',         'turkish': 'Turkey',
+  'mexican': 'Mexico',      'austrian': 'Austria',     'portuguese': 'Portugal',
+  'swiss': 'Switzerland',   'czech': 'Czech Republic', 'hungarian': 'Hungary',
+  'polish': 'Poland',       'russian': 'Russia',       'swedish': 'Sweden',
 };
 
 function processData(objects) {
@@ -79,41 +80,22 @@ function processData(objects) {
       || nationalityCountry;
     const country = NATIONALITY_TO_COUNTRY[countryRaw?.toLowerCase()] || countryRaw;
     if (!country?.trim()) return;
-
     if (!groups[country]) groups[country] = [];
-    // Store tag fields for color matching
-    const tags = new Set(
-      TAG_FIELDS.map(f => normalizeTag(obj[f] || '', f)).filter(v => v?.trim())
-    );
-    groups[country].push({
-      year,
-      title: obj.title,
-      date: obj.objectDate,
-      id: obj.objectID,
-      tags,
-    });
+    const tags = new Set(TAG_FIELDS.map(f => normalizeTag(obj[f] || '', f)).filter(v => v?.trim()));
+    groups[country].push({ year, title: obj.title, date: obj.objectDate, id: obj.objectID, tags });
   });
-
   return Object.entries(groups)
-    .map(([name, works]) => ({
-      name,
-      works: works.sort((a, b) => a.year - b.year),
-      count: works.length,
-    }))
+    .map(([name, works]) => ({ name, works: works.sort((a, b) => a.year - b.year), count: works.length }))
     .sort((a, b) => b.count - a.count)
     .slice(0, TOP_N)
     .sort((a, b) => a.works[0].year - b.works[0].year);
 }
 
 function getNodeFill(ctx, work, activeTags, tagColors, x, r) {
-  if (activeTags.size === 0) return null; // use default white
-  const matches = [...activeTags]
-    .filter(tag => work.tags.has(tag))
-    .map(tag => tagColors.get(tag))
-    .filter(Boolean);
+  if (activeTags.size === 0) return null;
+  const matches = [...activeTags].filter(tag => work.tags.has(tag)).map(tag => tagColors.get(tag)).filter(Boolean);
   if (matches.length === 0) return 'dim';
   if (matches.length === 1) return matches[0];
-  // Gradient for 2+ matches
   const grad = ctx.createLinearGradient(x - r, 0, x + r, 0);
   grad.addColorStop(0, matches[0]);
   grad.addColorStop(1, matches[1]);
@@ -125,7 +107,6 @@ function buildXScale(rows) {
   const allYears = rows.flatMap(r => r.works.map(w => w.year)).sort((a, b) => a - b);
   const n = allYears.length;
   if (n <= 1) return { yearToFrac: () => 0.5, sortedYears: allYears };
-
   function yearToFrac(year) {
     let lo = 0, hi = n - 1;
     while (lo < hi) {
@@ -133,21 +114,19 @@ function buildXScale(rows) {
       if (allYears[mid] < year) lo = mid + 1;
       else hi = mid;
     }
-    // Find full range of equal years
     let first = lo, last = lo;
     while (first > 0 && allYears[first - 1] === year) first--;
     while (last < n - 1 && allYears[last + 1] === year) last++;
     if (allYears[first] === year) return ((first + last) / 2) / (n - 1);
-    // Interpolate between neighbors
     if (lo === 0) return 0;
     if (lo >= n) return 1;
     const t = (year - allYears[lo - 1]) / (allYears[lo] - allYears[lo - 1]);
     return ((lo - 1) + t) / (n - 1);
   }
-
   return { yearToFrac, sortedYears: allYears };
 }
 
+// Desktop expanded view: horizontal x scale for a single row
 function getExpandedXOf(row, W) {
   const rowYears = row.works.map(w => w.year);
   const rowMin = Math.min(...rowYears);
@@ -159,24 +138,39 @@ function getExpandedXOf(row, W) {
   return year => LABEL_W + ((year - eMin) / (eMax - eMin)) * (W - LABEL_W - PAD_R);
 }
 
+// Mobile expanded view: zoomed vertical y scale for a single row
+function getMobileExpandedYScale(row, H) {
+  const rowYears = row.works.map(w => w.year);
+  const rMin = Math.min(...rowYears);
+  const rMax = Math.max(...rowYears);
+  const rRange = (rMax - rMin) || 100;
+  const rPad = Math.max(50, rRange * 0.1);
+  const eMin = rMin - rPad;
+  const eMax = rMax + rPad;
+  const chartH = H - M_HEADER_H - M_PAD_B;
+  return {
+    expandedYOf: year => M_HEADER_H + ((year - eMin) / (eMax - eMin)) * chartH,
+    eMin,
+    eMax,
+  };
+}
+
+// ── Component ──────────────────────────────────────────────────────────────
+
 export default function TimelineView({ objects, activeTags, tagColors, onNodeClick }) {
   const canvasRef = useRef(null);
   const tooltipRef = useRef(null);
   const closeRef = useRef(null);
 
   const stateRef = useRef({
-    rows: [], minYear: 0, maxYear: 0,
-    yearToFrac: () => 0.5, sortedYears: [],
-    hRow: -1, hNode: -1,
-    progress: 0,
-    expandedRow: -1,
-    expandProgress: 0,
+    rows: [], yearToFrac: () => 0.5, sortedYears: [],
+    hRow: -1, hNode: -1, progress: 0,
+    expandedRow: -1, expandProgress: 0, particles: [],
   });
   const rafRef = useRef(null);
   const particleRafRef = useRef(null);
   const redrawRef = useRef(null);
 
-  // Re-draw when filters change (without re-running the full effect)
   const filterRef = useRef({ activeTags, tagColors });
   filterRef.current = { activeTags, tagColors };
 
@@ -188,26 +182,42 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
 
     const ctx = canvas.getContext('2d');
     const rows = processData(objects);
-
-    const allYears = rows.flatMap(r => r.works.map(w => w.year));
-    const minYear = rows.length ? Math.min(...allYears) : 0;
-    const maxYear = rows.length ? Math.max(...allYears) : 1;
-
     const { yearToFrac, sortedYears } = buildXScale(rows);
-    stateRef.current = { rows, minYear, maxYear, yearToFrac, sortedYears, hRow: -1, hNode: -1, progress: 0, expandedRow: -1, expandProgress: 0, particles: [] };
+    stateRef.current = {
+      rows, yearToFrac, sortedYears,
+      hRow: -1, hNode: -1, progress: 0,
+      expandedRow: -1, expandProgress: 0, particles: [],
+    };
+
+    // ── Layout ──────────────────────────────────────────────────────────────
 
     function getLayout() {
       const W = canvas.offsetWidth;
       const H = canvas.offsetHeight;
+      const isMobile = W < MOBILE_BREAK;
+      const { rows, yearToFrac } = stateRef.current;
+
+      if (isMobile) {
+        const displayRows = rows.slice(0, M_N_COLS);
+        const nCols = displayRows.length || 1;
+        const colW = (W - M_AXIS_W) / nCols;
+        const mChartH = H - M_HEADER_H - M_PAD_B;
+        const colX = i => M_AXIS_W + i * colW + colW / 2;
+        // Horizontal jitter within a column
+        const nodeX = (i, id) => colX(i) + hashJitter(id) * colW * 0.32;
+        // Vertical time position (global quantile scale)
+        const timeToY = year => M_HEADER_H + yearToFrac(year) * mChartH;
+        return { W, H, isMobile: true, displayRows, colW, mChartH, colX, nodeX, timeToY };
+      }
+
+      const displayRows = rows;
       const chartW = W - LABEL_W - PAD_R;
       const chartH = H - PAD_T - PAD_B;
-      const { rows, yearToFrac, minYear, maxYear } = stateRef.current;
-      const rowH = rows.length ? chartH / rows.length : 1;
-      const yearRange = (maxYear - minYear) || 1;
+      const rowH = displayRows.length ? chartH / displayRows.length : 1;
       const xOf = year => LABEL_W + yearToFrac(year) * chartW;
       const baseY = i => PAD_T + i * rowH + rowH / 2;
       const nodeY = (i, id) => baseY(i) + hashJitter(id) * rowH * 0.28;
-      return { W, H, chartW, chartH, rowH, yearRange, xOf, baseY, nodeY };
+      return { W, H, isMobile: false, displayRows, chartW, chartH, rowH, xOf, baseY, nodeY };
     }
 
     function positionTooltip(e) {
@@ -219,13 +229,13 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
       tooltip.style.top = `${e.clientY - 10}px`;
     }
 
+    // ── Redraw ──────────────────────────────────────────────────────────────
+
     function redraw() {
-      const { W, H, chartW, rowH, xOf, baseY, nodeY } = getLayout();
+      const layout = getLayout();
+      const { W, H, isMobile } = layout;
       const { rows, hRow, hNode, progress, expandedRow, expandProgress } = stateRef.current;
       const { activeTags, tagColors } = filterRef.current;
-      const clipW = progress * chartW;
-      const anyHovered = hRow !== -1;
-      const anyFilter = activeTags.size > 0;
 
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, W, H);
@@ -238,7 +248,184 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
         return;
       }
 
-      // ── Expanded view ─────────────────────────────
+      // ══ MOBILE ══════════════════════════════════════════════════════════════
+      if (isMobile) {
+        const { displayRows, colW, mChartH, colX, nodeX, timeToY } = layout;
+        const anyHovered = hRow !== -1;
+
+        // ── Mobile expanded ─────────────────────────────────────────────────
+        if (expandedRow !== -1 && expandProgress > 0) {
+          const row = rows[expandedRow];
+          const ep = expandProgress;
+          const { expandedYOf, eMin, eMax } = getMobileExpandedYScale(row, H);
+          // Horizontal scatter in expanded mode
+          const scatter = (W - M_AXIS_W * 2) * 0.44;
+
+          // Animate: from column position → scattered position
+          const curX = id => {
+            const sx = colX(expandedRow) + hashJitter(id) * colW * 0.32;
+            const ex = W / 2 + hashJitter2(id) * scatter;
+            return sx + (ex - sx) * ep;
+          };
+          // Animate: from global timeToY → country-specific expandedYOf
+          const curY = year => {
+            const sy = timeToY(year);
+            const ey = expandedYOf(year);
+            return sy + (ey - sy) * ep;
+          };
+
+          const nodeR = NODE_R + NODE_R * ep;
+
+          // Connecting lines
+          ctx.lineWidth = 0.5;
+          ctx.strokeStyle = `rgba(255,255,255,${0.1 * ep})`;
+          for (let j = 0; j < row.works.length - 1; j++) {
+            const w1 = row.works[j], w2 = row.works[j + 1];
+            ctx.beginPath();
+            ctx.moveTo(curX(w1.id), curY(w1.year));
+            ctx.lineTo(curX(w2.id), curY(w2.year));
+            ctx.stroke();
+          }
+
+          // Nodes
+          row.works.forEach((w, j) => {
+            const x = curX(w.id);
+            const y = curY(w.year);
+            const isHovered = hNode === j;
+            const nr = isHovered ? nodeR + 2 : nodeR;
+            const fill = getNodeFill(ctx, w, activeTags, tagColors, x, nr);
+            if (fill === 'dim') {
+              ctx.fillStyle = `rgba(255,255,255,${0.12 * ep})`;
+            } else if (fill) {
+              ctx.fillStyle = fill;
+              ctx.globalAlpha = ep * 0.6;
+            } else {
+              ctx.fillStyle = `rgba(255,255,255,${0.28 * ep})`;
+            }
+            ctx.beginPath();
+            ctx.arc(x, y, nr, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+          });
+
+          // Country name — top left (close btn is top right)
+          if (ep > 0.3) {
+            const alpha = Math.min(1, (ep - 0.3) / 0.4);
+            ctx.font = '10px Helvetica, Arial, sans-serif';
+            ctx.fillStyle = `rgba(255,255,255,${alpha * 0.5})`;
+            ctx.textAlign = 'left';
+            ctx.fillText(row.name.toUpperCase(), M_AXIS_W, M_HEADER_H - 10);
+          }
+
+          // Year axis — left side, zoomed to country range
+          if (ep > 0.4) {
+            const alpha = Math.min(1, (ep - 0.4) / 0.4);
+            ctx.textAlign = 'right';
+            ctx.fillStyle = `rgba(255,255,255,${0.28 * alpha})`;
+            ctx.font = '9px Helvetica, Arial, sans-serif';
+            for (let t = 0; t <= 4; t++) {
+              const year = Math.round(eMin + ((eMax - eMin) / 4) * t);
+              const y = expandedYOf(year);
+              const label = year < 0 ? `${Math.abs(year)}BC` : String(year);
+              ctx.fillText(label, M_AXIS_W - 4, y + 3);
+            }
+          }
+
+          drawParticles();
+          return;
+        }
+
+        // ── Mobile normal ────────────────────────────────────────────────────
+
+        // Sweep: top-to-bottom clip
+        const needsClip = progress < 1;
+        if (needsClip) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(M_AXIS_W, M_HEADER_H, W - M_AXIS_W, progress * mChartH);
+          ctx.clip();
+        }
+
+        // Connecting lines (vertical within each column)
+        displayRows.forEach((row, i) => {
+          const isHovered = hRow === i;
+          ctx.lineWidth = 0.4;
+          ctx.strokeStyle = anyHovered
+            ? (isHovered ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.05)')
+            : 'rgba(255,255,255,0.18)';
+          for (let j = 0; j < row.works.length - 1; j++) {
+            const x1 = nodeX(i, row.works[j].id);
+            const y1 = timeToY(row.works[j].year);
+            const x2 = nodeX(i, row.works[j + 1].id);
+            const y2 = timeToY(row.works[j + 1].year);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+          }
+        });
+
+        // Nodes
+        displayRows.forEach((row, i) => {
+          const isHoveredCol = hRow === i;
+          row.works.forEach(w => {
+            const x = nodeX(i, w.id);
+            const y = timeToY(w.year);
+            const fill = getNodeFill(ctx, w, activeTags, tagColors, x, NODE_R);
+            if (anyHovered && !isHoveredCol) {
+              ctx.fillStyle = 'rgba(255,255,255,0.04)';
+            } else if (fill === 'dim') {
+              ctx.fillStyle = 'rgba(255,255,255,0.07)';
+            } else if (fill) {
+              ctx.fillStyle = fill;
+              ctx.globalAlpha = !anyHovered || isHoveredCol ? 1 : 0.3;
+            } else {
+              ctx.fillStyle = isHoveredCol ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.35)';
+            }
+            ctx.beginPath();
+            ctx.arc(x, y, NODE_R, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+          });
+        });
+
+        if (needsClip) ctx.restore();
+
+        // Column headers (country abbreviations — always visible)
+        ctx.font = '9px Helvetica, Arial, sans-serif';
+        ctx.textAlign = 'center';
+        displayRows.forEach((row, i) => {
+          const isHovered = hRow === i;
+          ctx.fillStyle = anyHovered
+            ? (isHovered ? WHITE : 'rgba(255,255,255,0.1)')
+            : 'rgba(255,255,255,0.45)';
+          const abbr = COUNTRY_ABBR[row.name] || row.name.slice(0, 3).toUpperCase();
+          ctx.fillText(abbr, colX(i), M_HEADER_H - 12);
+        });
+
+        // Year axis — left side
+        ctx.textAlign = 'right';
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        ctx.font = '9px Helvetica, Arial, sans-serif';
+        const { sortedYears } = stateRef.current;
+        for (let t = 0; t <= 3; t++) {
+          const idx = Math.round((t / 3) * (sortedYears.length - 1));
+          const year = sortedYears[idx];
+          const y = timeToY(year);
+          ctx.fillText(year < 0 ? `${Math.abs(year)}BC` : String(year), M_AXIS_W - 4, y + 3);
+        }
+
+        drawParticles();
+        return;
+      }
+
+      // ══ DESKTOP ═════════════════════════════════════════════════════════════
+
+      const { displayRows, chartW, rowH, xOf, baseY, nodeY } = layout;
+      const clipW = progress * chartW;
+      const anyHovered = hRow !== -1;
+
+      // ── Desktop expanded ─────────────────────────────────────────────────
       if (expandedRow !== -1 && expandProgress > 0) {
         const row = rows[expandedRow];
         const ep = expandProgress;
@@ -250,14 +437,14 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
         };
         const centerY = H / 2;
         const normalRowBaseY = baseY(expandedRow);
-        const currentY = (id) => {
+        const currentY = id => {
           const ny = normalRowBaseY + hashJitter(id) * rowH * 0.28;
           const ey = centerY + hashJitter(id) * H * 0.22;
           return ny + (ey - ny) * ep;
         };
         const nodeR = NODE_R + NODE_R * ep;
 
-        // Lines (dim connectors)
+        // Lines
         ctx.lineWidth = 0.5;
         ctx.strokeStyle = `rgba(255,255,255,${0.1 * ep})`;
         for (let j = 0; j < row.works.length - 1; j++) {
@@ -267,14 +454,13 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
           ctx.stroke();
         }
 
-        // Nodes — colored by filter, dim on no-match, bright on hover
+        // Nodes
         row.works.forEach((w, j) => {
           const x = currentXOf(w.year, w.id);
           const y = currentY(w.id);
           const isHovered = hRow === expandedRow && hNode === j;
           const nr = isHovered ? nodeR + 2 : nodeR;
           const fill = getNodeFill(ctx, w, activeTags, tagColors, x, nr);
-
           if (isHovered) {
             ctx.fillStyle = (fill && fill !== 'dim') ? fill : WHITE;
           } else if (fill === 'dim') {
@@ -302,7 +488,7 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
           ctx.fillText(name, LABEL_X, centerY + 4);
         }
 
-        // Year axis (row-specific)
+        // Year axis
         if (ep > 0.4) {
           const alpha = Math.min(1, (ep - 0.4) / 0.4);
           ctx.textAlign = 'center';
@@ -326,7 +512,7 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
         return;
       }
 
-      // ── Normal view ───────────────────────────────
+      // ── Desktop normal ───────────────────────────────────────────────────
 
       const needsClip = progress < 1;
       if (needsClip) {
@@ -336,14 +522,13 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
         ctx.clip();
       }
 
-      // Lines (white always — neutral connectors)
-      rows.forEach((row, i) => {
+      // Lines
+      displayRows.forEach((row, i) => {
         const isHovered = hRow === i;
         ctx.lineWidth = isHovered ? 0.8 : 0.5;
         ctx.strokeStyle = anyHovered
           ? (isHovered ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.08)')
           : 'rgba(255,255,255,0.28)';
-
         for (let j = 0; j < row.works.length - 1; j++) {
           ctx.beginPath();
           ctx.moveTo(xOf(row.works[j].year), nodeY(i, row.works[j].id));
@@ -353,7 +538,7 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
       });
 
       // Nodes
-      rows.forEach((row, i) => {
+      displayRows.forEach((row, i) => {
         const isHoveredRow = hRow === i;
         row.works.forEach((w, j) => {
           const x = xOf(w.year);
@@ -361,22 +546,18 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
           const isHoveredNode = isHoveredRow && hNode === j;
           const nr = isHoveredNode ? NODE_R + 1.5 : NODE_R;
           const fill = getNodeFill(ctx, w, activeTags, tagColors, x, nr);
-
           if (anyHovered && !isHoveredRow) {
             ctx.fillStyle = 'rgba(255,255,255,0.06)';
           } else if (fill === 'dim') {
             ctx.fillStyle = 'rgba(255,255,255,0.08)';
           } else if (fill) {
-            // Colored node — dim slightly if not hovered row
             ctx.fillStyle = fill;
             ctx.globalAlpha = isHoveredRow || !anyHovered ? 1 : 0.5;
           } else {
-            // No filter active — white
             ctx.fillStyle = isHoveredNode ? WHITE
               : isHoveredRow ? 'rgba(255,255,255,0.75)'
               : 'rgba(255,255,255,0.42)';
           }
-
           ctx.beginPath();
           ctx.arc(x, y, nr, 0, Math.PI * 2);
           ctx.fill();
@@ -389,7 +570,7 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
       // Labels
       ctx.font = '12px Helvetica, Arial, sans-serif';
       ctx.textAlign = 'left';
-      rows.forEach((row, i) => {
+      displayRows.forEach((row, i) => {
         const isHovered = hRow === i;
         ctx.fillStyle = anyHovered
           ? (isHovered ? WHITE : 'rgba(255,255,255,0.08)')
@@ -399,7 +580,7 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
         ctx.fillText(name, LABEL_X, baseY(i) + 3.5);
       });
 
-      // Year ticks — quantile-based (evenly spaced by data density)
+      // Year ticks
       ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(255,255,255,0.28)';
       ctx.font = '12px Helvetica, Arial, sans-serif';
@@ -412,12 +593,13 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
         if (!tickYears.includes(y)) tickYears.push(y);
       }
       tickYears.forEach(year => {
-        const x = xOf(year);
-        ctx.fillText(year < 0 ? `${Math.abs(year)} BC` : String(year), x, H - PAD_B + 20);
+        ctx.fillText(year < 0 ? `${Math.abs(year)} BC` : String(year), xOf(year), H - PAD_B + 20);
       });
 
       drawParticles();
     }
+
+    // ── Particles ────────────────────────────────────────────────────────────
 
     function drawParticles() {
       const { particles } = stateRef.current;
@@ -428,12 +610,9 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
         : null;
       particles.forEach((p, i) => {
         const alpha = p.baseAlpha + p.kickFade * 0.7;
-        let fillStyle;
-        if (filterColors?.length) {
-          fillStyle = hexToRgba(filterColors[i % filterColors.length], alpha);
-        } else {
-          fillStyle = `rgba(255,255,255,${alpha.toFixed(2)})`;
-        }
+        const fillStyle = filterColors?.length
+          ? hexToRgba(filterColors[i % filterColors.length], alpha)
+          : `rgba(255,255,255,${alpha.toFixed(2)})`;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r + p.kickFade * 0.8, 0, Math.PI * 2);
         ctx.fillStyle = fillStyle;
@@ -448,7 +627,7 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
     function makeParticle(W, H) {
       return {
         x: Math.random() * W,
-        y: PAD_T + Math.random() * Math.max(1, H - PAD_T - PAD_B),
+        y: Math.random() * H,
         vx: (Math.random() * 0.28 + 0.04) * (Math.random() < 0.5 ? 1 : -1),
         vy: (Math.random() - 0.5) * 0.12,
         r: 0.8 + Math.random() * 1.4,
@@ -462,11 +641,11 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
       stateRef.current.particles = Array.from({ length: AMBIENT_COUNT }, () => makeParticle(W, H));
     }
 
-    function kickParticles(clickY) {
+    function kickParticles(cx, cy) {
       stateRef.current.particles.forEach(p => {
-        const dist = Math.abs(p.y - clickY);
-        if (dist < 80) {
-          const str = (1 - dist / 80) * 5;
+        const dist = Math.hypot(p.x - cx, p.y - cy);
+        if (dist < 100) {
+          const str = (1 - dist / 100) * 5;
           p.kickVx = (Math.random() - 0.5) * str * 3.5;
           p.kickVy = (Math.random() - 0.5) * str * 2;
           p.kickFade = 0.8 + Math.random() * 0.2;
@@ -489,15 +668,15 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
         p.y += p.vy;
         if (p.x < 0) p.x = W;
         if (p.x > W) p.x = 0;
-        if (p.y < PAD_T) p.y = H - PAD_B;
-        if (p.y > H - PAD_B) p.y = PAD_T;
+        if (p.y < 0) p.y = H;
+        if (p.y > H) p.y = 0;
       });
     }
 
     function startAmbientLoop() {
       let lastTs = 0;
       function loop(ts) {
-        if (ts - lastTs > 42) { // ~24fps
+        if (ts - lastTs > 42) {
           lastTs = ts;
           tickParticles();
           redraw();
@@ -520,7 +699,8 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
     ro.observe(canvas);
     resize();
 
-    // Sweep animation
+    // ── Sweep animation ──────────────────────────────────────────────────────
+
     const FRAMES = 75;
     let frame = 0;
     stateRef.current.progress = 0;
@@ -539,6 +719,8 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
       }
     }
     rafRef.current = requestAnimationFrame(animate);
+
+    // ── Expand animation ─────────────────────────────────────────────────────
 
     function animateExpand(targetProgress, onDone) {
       cancelAnimationFrame(rafRef.current);
@@ -579,6 +761,8 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
       tooltip.style.display = 'none';
     }
 
+    // ── Mouse interactions ───────────────────────────────────────────────────
+
     function onMouseMove(e) {
       if (stateRef.current.progress < 1) return;
       const { expandProgress, expandedRow } = stateRef.current;
@@ -588,35 +772,62 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
       const mx = e.clientX - rect.left;
       const my = e.clientY - rect.top;
       const { rows } = stateRef.current;
-      const { W, H, rowH, xOf, nodeY } = getLayout();
+      const layout = getLayout();
+      const { W, H, isMobile, displayRows } = layout;
 
       let foundRow = -1;
       let foundNode = -1;
 
-      if (expandedRow !== -1) {
-        const row = rows[expandedRow];
-        const rowXOf = getExpandedXOf(row, W);
-        const centerY = H / 2;
-        row.works.forEach((w, j) => {
-          const x = rowXOf(w.year) + hashJitter2(w.id) * 35;
-          const y = centerY + hashJitter(w.id) * H * 0.22;
-          if (Math.abs(mx - x) < 12 && Math.abs(my - y) < 12) {
-            foundRow = expandedRow;
-            foundNode = j;
-          }
-        });
-        canvas.style.cursor = foundNode !== -1 ? 'pointer' : 'default';
-      } else {
-        const rowIndex = Math.floor((my - PAD_T) / rowH);
-        foundRow = rowIndex >= 0 && rowIndex < rows.length ? rowIndex : -1;
-        if (foundRow !== -1) {
-          rows[foundRow].works.forEach((w, j) => {
-            const x = xOf(w.year);
-            const y = nodeY(foundRow, w.id);
-            if (Math.abs(mx - x) < 9 && Math.abs(my - y) < 9) foundNode = j;
+      if (isMobile) {
+        if (expandedRow !== -1) {
+          // Mobile expanded: detect node hover
+          const row = rows[expandedRow];
+          const { expandedYOf } = getMobileExpandedYScale(row, H);
+          const scatter = (W - M_AXIS_W * 2) * 0.44;
+          row.works.forEach((w, j) => {
+            const x = W / 2 + hashJitter2(w.id) * scatter;
+            const y = expandedYOf(w.year);
+            if (Math.abs(mx - x) < 12 && Math.abs(my - y) < 12) {
+              foundRow = expandedRow;
+              foundNode = j;
+            }
           });
+          canvas.style.cursor = foundNode !== -1 ? 'pointer' : 'default';
+        } else {
+          // Mobile normal: detect column hover
+          const { colW } = layout;
+          const colIndex = Math.floor((mx - M_AXIS_W) / colW);
+          foundRow = colIndex >= 0 && colIndex < displayRows.length ? colIndex : -1;
+          canvas.style.cursor = foundRow !== -1 ? 'pointer' : 'default';
         }
-        canvas.style.cursor = foundRow !== -1 ? 'pointer' : 'default';
+      } else {
+        // Desktop
+        const { rowH, xOf, nodeY } = layout;
+        if (expandedRow !== -1) {
+          const row = rows[expandedRow];
+          const rowXOf = getExpandedXOf(row, W);
+          const centerY = H / 2;
+          row.works.forEach((w, j) => {
+            const x = rowXOf(w.year) + hashJitter2(w.id) * 35;
+            const y = centerY + hashJitter(w.id) * H * 0.22;
+            if (Math.abs(mx - x) < 12 && Math.abs(my - y) < 12) {
+              foundRow = expandedRow;
+              foundNode = j;
+            }
+          });
+          canvas.style.cursor = foundNode !== -1 ? 'pointer' : 'default';
+        } else {
+          const rowIndex = Math.floor((my - PAD_T) / rowH);
+          foundRow = rowIndex >= 0 && rowIndex < displayRows.length ? rowIndex : -1;
+          if (foundRow !== -1) {
+            displayRows[foundRow].works.forEach((w, j) => {
+              const x = xOf(w.year);
+              const y = nodeY(foundRow, w.id);
+              if (Math.abs(mx - x) < 9 && Math.abs(my - y) < 9) foundNode = j;
+            });
+          }
+          canvas.style.cursor = foundRow !== -1 ? 'pointer' : 'default';
+        }
       }
 
       const prev = stateRef.current;
@@ -626,7 +837,8 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
         redraw();
       }
 
-      if (foundNode !== -1 && foundRow !== -1) {
+      // Tooltip — desktop only
+      if (!isMobile && foundNode !== -1 && foundRow !== -1) {
         const work = rows[foundRow].works[foundNode];
         const year = work.date || (work.year < 0 ? `${Math.abs(work.year)} BC` : work.year);
         tooltip.textContent = `${work.title} — ${year}`;
@@ -653,7 +865,7 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
       } else {
         if (stateRef.current.hRow !== -1) {
           const rect = canvas.getBoundingClientRect();
-          kickParticles(e.clientY - rect.top);
+          kickParticles(e.clientX - rect.left, e.clientY - rect.top);
           openExpanded(stateRef.current.hRow);
         }
       }
@@ -668,10 +880,92 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
       tooltip.style.display = 'none';
     }
 
+    // ── Touch interactions ───────────────────────────────────────────────────
+
+    function onTouchStart(e) {
+      e.preventDefault(); // block scroll/zoom while interacting with canvas
+    }
+
+    function onTouchEnd(e) {
+      e.preventDefault(); // prevent synthetic click
+      if (stateRef.current.progress < 1) return;
+      const { expandProgress, expandedRow } = stateRef.current;
+      if (expandProgress > 0 && expandProgress < 1) return;
+
+      const touch = e.changedTouches[0];
+      const rect = canvas.getBoundingClientRect();
+      const mx = touch.clientX - rect.left;
+      const my = touch.clientY - rect.top;
+      const { rows } = stateRef.current;
+      const layout = getLayout();
+      const { W, H, isMobile, displayRows } = layout;
+
+      if (isMobile) {
+        if (expandedRow !== -1) {
+          // Mobile expanded: tap node → modal, tap elsewhere → close
+          const row = rows[expandedRow];
+          const { expandedYOf } = getMobileExpandedYScale(row, H);
+          const scatter = (W - M_AXIS_W * 2) * 0.44;
+          let foundNode = -1;
+          row.works.forEach((w, j) => {
+            const x = W / 2 + hashJitter2(w.id) * scatter;
+            const y = expandedYOf(w.year);
+            if (Math.abs(mx - x) < 22 && Math.abs(my - y) < 22) foundNode = j;
+          });
+          if (foundNode !== -1) {
+            const work = row.works[foundNode];
+            const obj = objects.find(o => o.objectID === work.id);
+            if (obj && onNodeClick) onNodeClick(obj);
+          } else {
+            closeExpanded();
+          }
+        } else {
+          // Mobile normal: tap column → expand
+          const { colW } = layout;
+          const colIndex = Math.floor((mx - M_AXIS_W) / colW);
+          if (colIndex >= 0 && colIndex < displayRows.length) {
+            kickParticles(mx, my);
+            openExpanded(colIndex);
+          }
+        }
+      } else {
+        // Desktop touch (tablet landscape, etc.)
+        if (expandedRow !== -1) {
+          const row = rows[expandedRow];
+          const rowXOf = getExpandedXOf(row, W);
+          const centerY = H / 2;
+          let foundNode = -1;
+          row.works.forEach((w, j) => {
+            const x = rowXOf(w.year) + hashJitter2(w.id) * 35;
+            const y = centerY + hashJitter(w.id) * H * 0.22;
+            if (Math.abs(mx - x) < 22 && Math.abs(my - y) < 22) foundNode = j;
+          });
+          if (foundNode !== -1) {
+            const work = row.works[foundNode];
+            const obj = objects.find(o => o.objectID === work.id);
+            if (obj && onNodeClick) onNodeClick(obj);
+          } else {
+            closeExpanded();
+          }
+        } else {
+          const { rowH } = layout;
+          const rowIndex = Math.floor((my - PAD_T) / rowH);
+          if (rowIndex >= 0 && rowIndex < displayRows.length) {
+            kickParticles(mx, my);
+            openExpanded(rowIndex);
+          }
+        }
+      }
+    }
+
+    // ── Event listeners ──────────────────────────────────────────────────────
+
     closeBtn.addEventListener('click', closeExpanded);
     canvas.addEventListener('mousemove', onMouseMove);
     canvas.addEventListener('mouseleave', onMouseLeave);
     canvas.addEventListener('click', onClick);
+    canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+    canvas.addEventListener('touchend', onTouchEnd);
 
     return () => {
       cancelAnimationFrame(rafRef.current);
@@ -680,13 +974,15 @@ export default function TimelineView({ objects, activeTags, tagColors, onNodeCli
       canvas.removeEventListener('mousemove', onMouseMove);
       canvas.removeEventListener('mouseleave', onMouseLeave);
       canvas.removeEventListener('click', onClick);
+      canvas.removeEventListener('touchstart', onTouchStart);
+      canvas.removeEventListener('touchend', onTouchEnd);
       closeBtn.removeEventListener('click', closeExpanded);
       tooltip.style.display = 'none';
       closeBtn.classList.remove('visible');
     };
   }, [objects]);
 
-  // Redraw when filters change (colors update immediately without re-animating)
+  // Redraw when filters change
   useEffect(() => {
     if (redrawRef.current && stateRef.current.rows.length) {
       redrawRef.current();
