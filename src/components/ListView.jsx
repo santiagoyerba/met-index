@@ -1,6 +1,8 @@
+import { useState, useRef, useCallback } from 'react';
 import { val, getLocation, parseCm, objMatchesActiveTags, getMatchingColors } from '../utils/met';
 
 const COLUMNS = [
+  { label: '#',          key: null     },
   { label: 'Type',       key: 'type'   },
   { label: 'Title',      key: 'title'  },
   { label: 'Artist',     key: 'artist' },
@@ -10,7 +12,7 @@ const COLUMNS = [
   { label: 'Dimensions', key: null     },
 ];
 
-function Row({ obj, activeTags, tagColors, anyActive, onClick }) {
+function Row({ obj, activeTags, tagColors, anyActive, onClick, onHover, onHoverEnd }) {
   const hit = objMatchesActiveTags(obj, activeTags);
   const hasImage = obj.primaryImage || obj.primaryImageSmall;
 
@@ -25,7 +27,10 @@ function Row({ obj, activeTags, tagColors, anyActive, onClick }) {
       className={`table-row${anyActive && !hit ? ' dimmed' : ''}`}
       style={rowStyle}
       onClick={hasImage ? () => onClick(obj) : undefined}
+      onMouseEnter={hasImage ? () => onHover(obj) : undefined}
+      onMouseLeave={hasImage ? onHoverEnd : undefined}
     >
+      <span className="obj-num">{obj.objectID}</span>
       <span title={obj.objectName}>{val(obj.objectName)}</span>
       <span title={obj.title}>{val(obj.title)}</span>
       <span title={obj.artistDisplayName}>{val(obj.artistDisplayName)}</span>
@@ -46,9 +51,21 @@ export default function ListView({
   onSort = () => {},
 }) {
   const anyActive = activeTags.size > 0;
+  const [hoveredObj, setHoveredObj] = useState(null);
+  const previewRef = useRef(null);
+
+  const handleMouseMove = useCallback((e) => {
+    if (previewRef.current) {
+      previewRef.current.style.left = (e.clientX + 24) + 'px';
+      previewRef.current.style.top  = (e.clientY - 80) + 'px';
+    }
+  }, []);
+
+  const handleHover    = useCallback((obj) => setHoveredObj(obj), []);
+  const handleHoverEnd = useCallback(() => setHoveredObj(null), []);
 
   return (
-    <div id="view-list">
+    <div id="view-list" onMouseMove={handleMouseMove}>
       <div className="table-header">
         {COLUMNS.map(({ label, key }) => (
           <span
@@ -72,9 +89,16 @@ export default function ListView({
             tagColors={tagColors}
             anyActive={anyActive}
             onClick={onRowClick}
+            onHover={handleHover}
+            onHoverEnd={handleHoverEnd}
           />
         ))}
       </div>
+      {hoveredObj?.primaryImageSmall && (
+        <div ref={previewRef} className="list-hover-preview">
+          <img src={hoveredObj.primaryImageSmall} alt="" />
+        </div>
+      )}
     </div>
   );
 }
