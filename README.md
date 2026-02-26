@@ -2,7 +2,7 @@
 
 A web index of religious and devotional artworks from the [Metropolitan Museum of Art](https://www.metmuseum.org/) public collection.
 
-**Live site:** https://santiagoyerba.github.io/met-index/
+**Live site:** https://met-index.vercel.app
 
 ---
 
